@@ -71,7 +71,12 @@ print("== verify4 phase means (rescaled to v2 trims) and coupling ratios ==")
 for axis, sign, t0, t1 in PHASES:
     win = np.array([v for (t, v) in samples if t0 <= t < t1])
     dom = win[:, axis] * sign
-    plateau = win[dom > 0.6 * dom.max()]
+    peak = dom.max()
+    if peak <= 0:
+        raise SystemExit(
+            f"Error: no positive deflection on {AXES[axis]} in window "
+            f"{t0}-{t1}s — check the capture or phase windows.")
+    plateau = win[dom > 0.6 * peak]
     mean = retrim(plateau.mean(axis=0))
     src = mean[axis]
     lbl = f"{'+' if sign > 0 else '-'}{AXES[axis]}"

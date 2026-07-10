@@ -59,6 +59,10 @@ for axis, sign, t0, t1 in PHASES:
     arr = np.array(win)
     dom = arr[:, axis] * sign  # dominant axis, oriented positive
     peak = dom.max()
+    if peak <= 0:
+        raise SystemExit(
+            f"Error: no positive deflection on {AXES[axis]} in window "
+            f"{t0}-{t1}s — check the capture or phase windows.")
     plateau = arr[(dom > 0.6 * peak)]
     mean_raw = plateau.mean(axis=0) / GAINS_OLD
     S.append(mean_raw)
