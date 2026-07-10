@@ -23,8 +23,11 @@ inline constexpr float DECOUPLE[6][6] = {
 // Trims half-corrected (log-space) against the 2026-07-09 verification
 // run to average out run-to-run deflection variance. RX (pitch) is
 // additionally scaled ~0.85x — it felt oversensitive at equal scaling.
+// RY- (roll right) is additionally scaled 1.5x — feel-tested at ~2/3 the
+// speed of roll left (roll had the largest run-to-run capture variance,
+// so the hand overrides the capture here).
 inline constexpr float TRIM_POS[6] = {0.984, 1.187, 1.023, 0.740, 0.897, 0.992};
-inline constexpr float TRIM_NEG[6] = {1.453, 1.384, 2.000, 0.950, 1.450, 1.336};
+inline constexpr float TRIM_NEG[6] = {1.453, 1.384, 2.000, 0.950, 2.175, 1.336};
 
 // Soft dead zones, per axis (same order), in output units where 350 =
 // full deflection. Output ramps from zero at the edge of the zone (no
@@ -47,12 +50,15 @@ inline constexpr float CURVE_EXPO[6] = {1.7, 1.7, 1.7, 2.1, 1.7, 1.7};
 // The RX source rows are rescaled by the post-fit RX trim change
 // (0.870->0.740 pos, 1.121->0.950 neg): the fit measured coupling
 // against the old trims, and the correction must stay constant in
-// absolute terms when the source axis is scaled down.
+// absolute terms when the source axis is scaled down. Exception: the
+// RX->TY terms deliberately keep the pre-rescale values — forward pushes
+// carry incidental pitch, and the full-strength correction ate enough
+// forward pan to feel slow (feel-tested 2026-07-09).
 inline constexpr float CROSS_POS[6][6] = {
     {0.0000, 0.0000, 0.5193, 0.0000, 0.0000, 0.0000},
     {0.0000, 0.0000, 0.5983, 0.0000, 0.0000, 0.0000},
     {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
-    {-0.5713, -0.3341, 0.4867, 0.0000, 0.0000, 0.0000},
+    {-0.5713, -0.2842, 0.4867, 0.0000, 0.0000, 0.0000},
     {0.1739, -0.3665, 0.0000, 0.0000, 0.0000, 0.0000},
     {0.0000, 0.0000, 0.2749, 0.0000, 0.0000, 0.0000}
 };
@@ -60,8 +66,10 @@ inline constexpr float CROSS_NEG[6][6] = {
     {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
     {0.0000, 0.0000, -0.2084, 0.0000, 0.0000, 0.0000},
     {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
-    {0.0000, -0.2089, -0.3070, 0.0000, 0.0000, 0.0000},
-    {0.4203, 0.7631, 0.0000, 0.0000, 0.0000, 0.0000},
+    {0.0000, -0.1770, -0.3070, 0.0000, 0.0000, 0.0000},
+    // RY row scaled 1/1.5 to offset the RY- trim boost (correction must
+    // stay constant in absolute terms when the source axis is scaled).
+    {0.2802, 0.5087, 0.0000, 0.0000, 0.0000, 0.0000},
     {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000}
 };
 
