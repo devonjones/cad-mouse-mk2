@@ -5,10 +5,9 @@
 // diagonal matches fit_matrix.py's GAINS_OLD, so a capture taken on
 // this config feeds the fit directly. Replace with fitted values.
 //
-// Conventions (same as every unit header): axis order TX, TY, TZ, RX,
-// RY, RZ; pipeline v = SIGN_AXIS .* sensed, out = DECOUPLE @ v, then
-// per-direction TRIM; output units are AXIS_LIMIT (350) = full
-// deflection, matching a genuine SpaceMouse.
+// Axis order: TX, TY, TZ, RX, RY, RZ. Output units: AXIS_LIMIT (350) =
+// full deflection. Pipeline semantics live on decouple()/applyCrossFix()
+// in MotionController.cpp.
 inline constexpr int SIGN_AXIS[6] = {+1, -1, +1, -1, -1, -1};
 inline constexpr float DECOUPLE[6][6] = {
     {48.0, 0.0, 0.0, 0.0, 0.0, 0.0},

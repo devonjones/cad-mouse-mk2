@@ -11,12 +11,16 @@ import numpy as np
 
 AXES = ["X", "Y", "Z", "Rx", "Ry", "Rz"]
 
-# verify4 telemetry is gained() = post-matrix, post-OLD-trim values.
-# Rescale to v2's NEW trims so coefficients apply to what v2 computes.
+# The capture's telemetry is gained() = post-matrix, post-OLD-trim values.
+# Rescale to the trims the firmware will actually SHIP with, so the
+# fitted coefficients apply to what the firmware computes at runtime.
+# NEW_* must equal the unit header's TRIM_POS/TRIM_NEG at flash time —
+# if trims are hand-adjusted after fitting, the affected CROSS source
+# rows must be rescaled by old_trim/new_trim (see unit1.h's RX rows).
 OLD_POS = np.array([1.1403, 1.1873, 1.3074, 0.9970, 0.8971, 0.8984])
 OLD_NEG = np.array([1.5141, 1.4741, 1.8186, 1.1210, 1.6126, 1.1909])
-NEW_POS = np.array([0.984, 1.187, 1.023, 0.870, 0.897, 0.992])
-NEW_NEG = np.array([1.453, 1.384, 2.000, 1.121, 1.450, 1.336])
+NEW_POS = np.array([0.984, 1.187, 1.023, 0.740, 0.897, 0.992])
+NEW_NEG = np.array([1.453, 1.384, 2.000, 0.950, 1.450, 1.336])
 
 def parse(path):
     samples, t, cur = [], 0.0, {}

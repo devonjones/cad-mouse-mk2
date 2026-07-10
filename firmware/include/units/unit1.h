@@ -44,11 +44,15 @@ inline constexpr float CURVE_EXPO[6] = {1.7, 1.7, 1.7, 2.1, 1.7, 1.7};
 // 2026-07-09 verification capture; only rotation->translation and
 // translation->TZ terms above 0.15 are corrected — untreated, rocking
 // the cap (roll) dragged up to 76% of its value into Y-pan.
+// The RX source rows are rescaled by the post-fit RX trim change
+// (0.870->0.740 pos, 1.121->0.950 neg): the fit measured coupling
+// against the old trims, and the correction must stay constant in
+// absolute terms when the source axis is scaled down.
 inline constexpr float CROSS_POS[6][6] = {
     {0.0000, 0.0000, 0.5193, 0.0000, 0.0000, 0.0000},
     {0.0000, 0.0000, 0.5983, 0.0000, 0.0000, 0.0000},
     {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
-    {-0.4859, -0.2842, 0.4140, 0.0000, 0.0000, 0.0000},
+    {-0.5713, -0.3341, 0.4867, 0.0000, 0.0000, 0.0000},
     {0.1739, -0.3665, 0.0000, 0.0000, 0.0000, 0.0000},
     {0.0000, 0.0000, 0.2749, 0.0000, 0.0000, 0.0000}
 };
@@ -56,7 +60,7 @@ inline constexpr float CROSS_NEG[6][6] = {
     {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
     {0.0000, 0.0000, -0.2084, 0.0000, 0.0000, 0.0000},
     {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000},
-    {0.0000, -0.1770, -0.2602, 0.0000, 0.0000, 0.0000},
+    {0.0000, -0.2089, -0.3070, 0.0000, 0.0000, 0.0000},
     {0.4203, 0.7631, 0.0000, 0.0000, 0.0000, 0.0000},
     {0.0000, 0.0000, 0.0000, 0.0000, 0.0000, 0.0000}
 };
