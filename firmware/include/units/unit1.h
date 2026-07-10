@@ -37,9 +37,12 @@ inline constexpr float DEAD_AXIS[6] = {40.0, 40.0, 80.0, 11.0, 14.0, 12.0};
 
 // Sensitivity curve exponent per axis, applied after the soft dead
 // zone: >1 gives fine control at light deflection while full deflection
-// still reaches AXIS_LIMIT. 1.0 = linear. RX (pitch) runs steeper to
-// tame its oversensitive mid-range.
-inline constexpr float CURVE_EXPO[6] = {1.7, 1.7, 1.7, 2.1, 1.7, 1.7};
+// still reaches AXIS_LIMIT. 1.0 = linear.
+// Translation runs flatter and rotation steeper (feel-tested 2026-07-09):
+// the wide translation dead zones plus an equal expo made mid-deflection
+// rotation ~1.6x stronger than translation, which broke the coordinated
+// strafe-while-rotating needed to orbit an object and keep it centered.
+inline constexpr float CURVE_EXPO[6] = {1.35, 1.35, 1.5, 2.1, 2.0, 2.0};
 
 // Residual cross-coupling corrections the linear DECOUPLE matrix can't
 // express (the bleed is direction-dependent): after trims, each target
