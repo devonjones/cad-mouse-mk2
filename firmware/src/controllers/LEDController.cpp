@@ -33,6 +33,7 @@ void LEDController::begin() {
   pinMode(Config::PIN_LED_LS, OUTPUT);
   digitalWrite(Config::PIN_LED_LS, LOW);
 
+  idleColorIndex_ = Config::LED_DEFAULT_COLOR_INDEX;
   EEPROM.begin(kEepromSize);
   if (EEPROM.read(kMagicAddr) == kMagic) {
     const uint8_t idx = EEPROM.read(kColorIndexAddr);
