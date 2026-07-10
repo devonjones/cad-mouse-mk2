@@ -29,6 +29,13 @@ were fitted for one specific unit — a different build should re-run this.
    overwrites rather than composes, so re-fitting an already-corrected unit
    requires zeroing its CROSS arrays and reflashing first.
 6. Rebuild without the debug flag for the final pure-HID firmware.
+7. Feel-balance the CURVE_EXPO ratio between translation and rotation by
+   orbiting an object while holding it centered (strafe-while-rotate).
+   Fitted magnitudes only guarantee full-deflection outputs match; at
+   working deflections the wide noise-driven translation dead zones make
+   equal exponents rotation-heavy, which breaks coordinated moves. Unit 1
+   landed on translation 1.35/1.35/1.5 vs rotation 2.1/2.0/2.0 — start
+   there.
 
 Flashing without opening the case: hold both buttons 10s to reboot into the
 UF2 bootloader. Hold both 3s to recalibrate the zero pose. Hold only the
