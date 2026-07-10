@@ -1,5 +1,9 @@
 import re
 import sys
+
+if len(sys.argv) < 2:
+    print(f"Usage: python3 {sys.argv[0]} <capture_file>")
+    sys.exit(1)
 import numpy as np
 
 AXES = ["X", "Y", "Z", "Rx", "Ry", "Rz"]

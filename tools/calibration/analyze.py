@@ -1,5 +1,9 @@
 import re, sys
 
+if len(sys.argv) < 2:
+    print(f"Usage: python3 {sys.argv[0]} <capture_file>")
+    sys.exit(1)
+
 AXES = ["X", "Y", "Z", "Rx", "Ry", "Rz"]
 
 # Parse: #t= markers give flush timestamps; samples between markers share the
