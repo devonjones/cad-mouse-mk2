@@ -26,11 +26,42 @@ enum AxisIndex {
   AXIS_RY,
   AXIS_RZ
 };
+
+// Sign fixes, fitted decoupling matrix (gain + cross-axis cancellation),
+// then per-direction trims for the asymmetric magnet/sensor response.
+void decouple(const float sensed[6], float y[6]) {
+  float v[6];
+  for (int i = 0; i < 6; i++) {
+    v[i] = Config::SIGN_AXIS[i] * sensed[i];
+  }
+  for (int i = 0; i < 6; i++) {
+    float acc = 0.0f;
+    for (int j = 0; j < 6; j++) {
+      acc += Config::DECOUPLE[i][j] * v[j];
+    }
+    y[i] = acc * (acc >= 0.0f ? Config::TRIM_POS[i] : Config::TRIM_NEG[i]);
+  }
+}
+
+// Second-stage correction for the direction-dependent coupling the
+// linear matrix leaves behind (e.g. roll dragging pan along).
+void applyCrossFix(const float y[6], float yc[6]) {
+  for (int i = 0; i < 6; i++) {
+    float acc = y[i];
+    for (int j = 0; j < 6; j++) {
+      if (j == i) continue;
+      const float c = (y[j] >= 0.0f) ? Config::CROSS_POS[j][i]
+                                     : Config::CROSS_NEG[j][i];
+      acc -= c * y[j];
+    }
+    yc[i] = acc;
+  }
+}
 }  // namespace
 
 void MotionController::reset() {
   for (int i = 0; i < 6; i++) {
-    filt_[i] = 0.0;
+    filt_[i] = 0.0f;
   }
   motionActive_ = false;
 }
@@ -42,17 +73,17 @@ float MotionController::clampf(float v, float lo, float hi) {
 }
 
 float MotionController::hardZero(float v, float thr) {
-  return (fabs(v) < thr) ? 0.0 : v;
+  return (fabsf(v) < thr) ? 0.0f : v;
 }
 
 float MotionController::lowpass(float prev, float x, float dt, float tau) {
-  if (tau <= 0.0) return x;
+  if (tau <= 0.0f) return x;
   const float a = dt / (tau + dt);
   return prev + a * (x - prev);
 }
 
 float MotionController::axisBaseDead(int i) {
-  return (i < 3) ? Config::DEAD_T : Config::DEAD_R;
+  return Config::DEAD_AXIS[i];
 }
 
 void MotionController::compute(const float raw[9], const float* baseline, float dt,
@@ -72,20 +103,21 @@ void MotionController::compute(const float raw[9], const float* baseline, float 
   //   Tx = (mag1x + mag2x + mag3x) / 3
   //   Ty = (mag1y + mag2y + mag3y) / 3
   //   Tz = (mag1z + mag2z + mag3z) / 3
-  const float tx = (mag1x + mag2x + mag3x) / 3.0;
-  const float ty = (mag1y + mag2y + mag3y) / 3.0;
-  const float tz = (mag1z + mag2z + mag3z) / 3.0;
+  const float tx = (mag1x + mag2x + mag3x) / 3.0f;
+  const float ty = (mag1y + mag2y + mag3y) / 3.0f;
+  const float tz = (mag1z + mag2z + mag3z) / 3.0f;
 
   // Physical PCB layout:
   // MAG2 = top left, MAG3 = top right, MAG1 = bottom.
-  const float mag2PosX = -0.5;
-  const float mag2PosY = sqrt(3.0) / 6.0;
+  constexpr float kSqrt3 = 1.7320508f;
+  constexpr float mag2PosX = -0.5f;
+  constexpr float mag2PosY = kSqrt3 / 6.0f;
 
-  const float mag3PosX = 0.5;
-  const float mag3PosY = sqrt(3.0) / 6.0;
+  constexpr float mag3PosX = 0.5f;
+  constexpr float mag3PosY = kSqrt3 / 6.0f;
 
-  const float mag1PosX = 0.0;
-  const float mag1PosY = -sqrt(3.0) / 3.0;
+  constexpr float mag1PosX = 0.0f;
+  constexpr float mag1PosY = -kSqrt3 / 3.0f;
 
   // Rotation estimates:
   //   Ry = mag3z - mag2z
@@ -95,7 +127,7 @@ void MotionController::compute(const float raw[9], const float* baseline, float 
   //   Rx = sqrt(3) * (mag2z + mag3z - 2 * mag1z) / 3
   //     top pair minus bottom sensor
   //     -> front/back tilt of the triangle
-  const float rx = (sqrt(3.0) * (mag2z + mag3z - 2.0 * mag1z)) / 3.0;
+  const float rx = (kSqrt3 * (mag2z + mag3z - 2.0f * mag1z)) / 3.0f;
   const float ry = (mag3z - mag2z);
 
   //   Rz = sum_i (posXi * magYi - posYi * magXi)
@@ -106,33 +138,46 @@ void MotionController::compute(const float raw[9], const float* baseline, float 
       (mag1PosX * mag1y - mag1PosY * mag1x);
   const float rz = swirlNum;
 
-  // Apply sign fixes and gains
+  const float sensed[6] = {tx, ty, tz, rx, ry, rz};
   float y[6];
-  y[AXIS_TX] = Config::SIGN_AXIS[AXIS_TX] * tx * Config::GAIN_T[AXIS_TX];
-  y[AXIS_TY] = Config::SIGN_AXIS[AXIS_TY] * ty * Config::GAIN_T[AXIS_TY];
-  y[AXIS_TZ] = Config::SIGN_AXIS[AXIS_TZ] * tz * Config::GAIN_T[AXIS_TZ];
-  y[AXIS_RX] = Config::SIGN_AXIS[AXIS_RX] * rx * Config::GAIN_R[AXIS_RX - 3];
-  y[AXIS_RY] = Config::SIGN_AXIS[AXIS_RY] * ry * Config::GAIN_R[AXIS_RY - 3];
-  y[AXIS_RZ] = Config::SIGN_AXIS[AXIS_RZ] * rz * Config::GAIN_R[AXIS_RZ - 3];
+  decouple(sensed, y);
 
-  // Filter, clamp to range and dead zones.
+  float yc[6];
+  applyCrossFix(y, yc);
+
+  for (int i = 0; i < 6; i++) {
+    gained_[i] = yc[i];
+  }
+
+  // Soft dead zone + sensitivity curve, then filter and clamp. The
+  // shaped value ramps smoothly from zero at the dead-zone edge, so a
+  // light touch produces small-but-present motion instead of nothing.
   motionActive_ = false;
   for (int i = 0; i < 6; i++) {
-    const float dead = axisBaseDead(i);
+    const float shaped =
+        shapeAxis(yc[i], axisBaseDead(i), Config::CURVE_EXPO[i]);
 
-    if (fabs(y[i]) < dead) {
-      filt_[i] = 0.0;
-    } else {
-      filt_[i] = lowpass(filt_[i], y[i], dt, Config::SMOOTH_TAU_S);
-    }
+    filt_[i] = lowpass(filt_[i], shaped, dt, Config::SMOOTH_TAU_S);
 
     const float limited =
         clampf(filt_[i], -Config::AXIS_LIMIT, Config::AXIS_LIMIT);
-    out[i] = hardZero(limited, dead);
-    if (out[i] != 0.0) {
+    // Epsilon cutoff so the filter tail decays to a true zero.
+    out[i] = hardZero(limited, 1.0f);
+    if (out[i] != 0.0f) {
       motionActive_ = true;
     }
   }
+}
+
+float MotionController::shapeAxis(float v, float dead, float expo) {
+  const float mag = fabsf(v);
+  if (mag <= dead) {
+    return 0.0f;
+  }
+  float m = (mag - dead) / (Config::AXIS_LIMIT - dead);
+  if (m > 1.0f) m = 1.0f;
+  const float curved = powf(m, expo) * Config::AXIS_LIMIT;
+  return (v < 0.0f) ? -curved : curved;
 }
 
 bool MotionController::hasMotionActivity() const { return motionActive_; }

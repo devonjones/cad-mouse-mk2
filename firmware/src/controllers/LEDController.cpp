@@ -1,5 +1,16 @@
 #include "controllers/LEDController.h"
+
+#include <EEPROM.h>
+
 #include "Config.h"
+
+namespace {
+// Flash-persisted settings layout (RP2040 EEPROM emulation).
+const int kEepromSize = 256;
+const int kMagicAddr = 0;
+const int kColorIndexAddr = 1;
+const uint8_t kMagic = 0x42;
+}
 
 LEDController::LEDController()
     : ring_(Config::LED_COUNT, Config::PIN_LED_DATA,
@@ -22,9 +33,30 @@ void LEDController::begin() {
   pinMode(Config::PIN_LED_LS, OUTPUT);
   digitalWrite(Config::PIN_LED_LS, LOW);
 
+  idleColorIndex_ = Config::LED_DEFAULT_COLOR_INDEX;
+  EEPROM.begin(kEepromSize);
+  if (EEPROM.read(kMagicAddr) == kMagic) {
+    const uint8_t idx = EEPROM.read(kColorIndexAddr);
+    if (idx < Config::LED_IDLE_PALETTE_COUNT) {
+      idleColorIndex_ = idx;
+    }
+  }
+
   ring_.begin();
   ring_.setBrightness(Config::LED_BRIGHTNESS);
   ring_.show();
+}
+
+unsigned long LEDController::idleColor() const {
+  return Config::LED_IDLE_PALETTE[idleColorIndex_];
+}
+
+void LEDController::cycleIdleColor() {
+  idleColorIndex_ = (idleColorIndex_ + 1) % Config::LED_IDLE_PALETTE_COUNT;
+  EEPROM.write(kMagicAddr, kMagic);
+  EEPROM.write(kColorIndexAddr, static_cast<uint8_t>(idleColorIndex_));
+  EEPROM.commit();
+  setSolid(idleColor());
 }
 
 void LEDController::setPower(bool enabled) {

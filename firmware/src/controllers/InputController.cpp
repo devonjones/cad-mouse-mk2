@@ -6,6 +6,11 @@ using namespace ace_button;
 
 namespace {
 const long kCalibrationHoldMs = 3000;
+// Keep holding both buttons past the calibration hold to reboot into the
+// UF2 bootloader (RPI-RP2 drive) — flashing without opening the case.
+const long kBootloaderHoldMs = 10000;
+// Hold ONLY the right button to cycle the idle LED color.
+const long kColorHoldMs = 3000;
 const uint16_t leftButtonMask = 0x0001;
 const uint16_t rightButtonMask = 0x0002;
 }
@@ -36,6 +41,20 @@ void InputController::update() {
   leftBtn_.check();
   rightBtn_.check();
 
+  if (rightPressed_ && !leftPressed_) {
+    if (rightHoldStartMs_ == 0) {
+      rightHoldStartMs_ = now;
+    } else if (!colorHoldFired_ &&
+               (now - rightHoldStartMs_) >= kColorHoldMs) {
+      colorCycleRequested_ = true;
+      hadActivity_ = true;
+      colorHoldFired_ = true;
+    }
+  } else {
+    rightHoldStartMs_ = 0;
+    colorHoldFired_ = false;
+  }
+
   if (!areBothPressed()) {
     bothHeldStartMs_ = 0;
     calibrationHoldFired_ = false;
@@ -51,6 +70,10 @@ void InputController::update() {
     calibrationRequested_ = true;
     hadActivity_ = true;
     calibrationHoldFired_ = true;
+  }
+
+  if (bothHeldStartMs_ != 0 && (now - bothHeldStartMs_) >= kBootloaderHoldMs) {
+    rp2040.rebootToBootloader();
   }
 }
 
@@ -68,6 +91,12 @@ uint16_t InputController::buttonBits() const {
 bool InputController::takeCalibrationRequest() {
   const bool out = calibrationRequested_;
   calibrationRequested_ = false;
+  return out;
+}
+
+bool InputController::takeColorCycleRequest() {
+  const bool out = colorCycleRequested_;
+  colorCycleRequested_ = false;
   return out;
 }
 

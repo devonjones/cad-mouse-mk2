@@ -12,6 +12,10 @@ class LEDController {
   void updateSpinner();
   void off();
 
+  // Persistent idle color selection (cycled via button gesture).
+  unsigned long idleColor() const;
+  void cycleIdleColor();
+
  private:
   enum class Mode {
     Off,
@@ -24,6 +28,7 @@ class LEDController {
   unsigned long toNeoColor(unsigned long color);
 
   bool isPowered_ = false;
+  int idleColorIndex_ = 0;
   Mode mode_ = Mode::Off;
   unsigned long color_ = 0;
   int spinnerIndex_ = 0;

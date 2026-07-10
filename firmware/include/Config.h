@@ -2,9 +2,19 @@
 
 #include <Arduino.h>
 
+// Uncomment to build a debug firmware with USB CDC serial telemetry.
+// Enabling this re-adds the CDC interface that HIDController::begin()
+// strips, so the device no longer enumerates as the pure-HID shape a
+// real SpaceMouse Compact presents. Leave undefined for normal use.
+// #define ENABLE_DEBUG_SERIAL
+
 namespace Config {
 
+#ifdef ENABLE_DEBUG_SERIAL
 const bool ENABLE_TELEMETRY = true;
+#else
+const bool ENABLE_TELEMETRY = false;
+#endif
 
 // Hardware pins (XIAO RP2040)
 const int PIN_RIGHT_BTN = D0;
@@ -18,25 +28,63 @@ const int PIN_MAG3_LS = D8;
 // Samples for calibration offset
 const int ZERO_SAMPLES = 200;
 
-// Gains and sign fixes
-const float GAIN_T[3] = {28.0, 28.0, 24.0};
-const float GAIN_R[3] = {18.0, 18.0, 20.0};
-const int SIGN_AXIS[6] = {-1, +1, -1, +1, +1, +1};
-
-// Dead zones
-const float DEAD_T = 16.0;
-const float DEAD_R = 20.0;
+// Per-unit calibration (DECOUPLE, TRIM, DEAD_AXIS, CURVE_EXPO, CROSS,
+// LED default). Each physical unit has its own fitted header — select
+// with -DUNIT=<n> (platformio.ini defines one env per unit).
+#ifndef UNIT
+#define UNIT 1
+#endif
+#if UNIT == 1
+#include "units/unit1.h"
+#elif UNIT == 2
+#include "units/unit2.h"
+#else
+#error "Unknown UNIT - add firmware/include/units/unit<n>.h"
+#endif
 
 // Smoothing
-const float SMOOTH_TAU_S = 0.08;
+const float SMOOTH_TAU_S = 0.09f;
 
 // Final axis output range
-const float AXIS_LIMIT = 350.0;
+inline constexpr float AXIS_LIMIT = 350.0f;
+
+// A dead zone at or beyond full scale would zero the axis and produce
+// NaN in the sensitivity curve's normalization. Enforce at compile time
+// so a typo in a unit header can't ship.
+constexpr bool deadZonesValid(const float (&dead)[6], float limit) {
+  for (int i = 0; i < 6; i++) {
+    if (dead[i] < 0.0f || dead[i] >= limit) return false;
+  }
+  return true;
+}
+static_assert(deadZonesValid(DEAD_AXIS, AXIS_LIMIT),
+              "unit header's DEAD_AXIS entries must be within [0, AXIS_LIMIT)");
+
+// A real SpaceMouse streams reports while deflected; refresh unchanged
+// non-zero axis reports at least this often so drivers don't see the
+// device go quiet mid-motion.
+const unsigned long HID_KEEPALIVE_MS = 50;
 
 // RGB LEDs
 const int LED_COUNT = 8;
 const int LED_BRIGHTNESS = 40;
-const unsigned long LED_IDLE_COLOR = 0x00FF00;
+// Idle color palette. Cycle at runtime by holding ONLY the right button
+// for 3s while idle; the selection persists in flash across power
+// cycles. First entry is the factory default.
+inline constexpr unsigned long LED_IDLE_PALETTE[] = {
+    0x9400D3,  // purple
+    0x00FF00,  // green
+    0x0080FF,  // sky blue
+    0x00FFFF,  // cyan
+    0xFF00FF,  // magenta
+    0xFF4000,  // orange
+    0xFFFFFF,  // white
+};
+inline constexpr int LED_IDLE_PALETTE_COUNT =
+    sizeof(LED_IDLE_PALETTE) / sizeof(LED_IDLE_PALETTE[0]);
+static_assert(LED_DEFAULT_COLOR_INDEX >= 0 &&
+                  LED_DEFAULT_COLOR_INDEX < LED_IDLE_PALETTE_COUNT,
+              "unit header's LED_DEFAULT_COLOR_INDEX is outside the palette");
 const unsigned long LED_CALIBRATING_COLOR = 0x0000FF;
 
 // FSM timing

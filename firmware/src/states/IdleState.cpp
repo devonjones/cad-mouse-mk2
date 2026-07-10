@@ -9,7 +9,7 @@
 void IdleState::enter() {
   lastUpdateMs_ = 0;
   lastActivityMs_ = millis();
-  ledController.setSolid(Config::LED_IDLE_COLOR);
+  ledController.setSolid(ledController.idleColor());
 }
 
 bool IdleState::handleCalibrationRequest() {
@@ -34,7 +34,10 @@ void IdleState::runMotionPipeline(float dt, unsigned long now) {
   const uint16_t buttonBits = inputController.buttonBits();
   const bool hidReportSent = hidController.sendReports(motion, buttonBits);
   if (telemetryController.enabled()) {
-    telemetryController.publish(motion, buttonBits, hidReportSent);
+    // Publish pre-deadzone/clamp values so gain calibration sees true
+    // full-deflection magnitudes.
+    telemetryController.publish(motionController.gained(), buttonBits,
+                                hidReportSent);
   }
 }
 
@@ -52,13 +55,17 @@ void IdleState::update() {
     return;
   }
 
+  if (inputController.takeColorCycleRequest()) {
+    ledController.cycleIdleColor();
+  }
+
   const unsigned long now = millis();
   if (inputController.takeActivity()) {
     lastActivityMs_ = now;
   }
 
-  const float dt = (lastUpdateMs_ == 0) ? 0.01
-                                        : ((now - lastUpdateMs_) / 1000.0);
+  const float dt = (lastUpdateMs_ == 0) ? 0.01f
+                                        : ((now - lastUpdateMs_) / 1000.0f);
   lastUpdateMs_ = now;
   runMotionPipeline(dt, now);
   handleSleepTransition(now);
