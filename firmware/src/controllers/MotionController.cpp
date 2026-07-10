@@ -109,14 +109,15 @@ void MotionController::compute(const float raw[9], const float* baseline, float 
 
   // Physical PCB layout:
   // MAG2 = top left, MAG3 = top right, MAG1 = bottom.
-  const float mag2PosX = -0.5f;
-  const float mag2PosY = sqrtf(3.0f) / 6.0f;
+  constexpr float kSqrt3 = 1.7320508f;
+  constexpr float mag2PosX = -0.5f;
+  constexpr float mag2PosY = kSqrt3 / 6.0f;
 
-  const float mag3PosX = 0.5f;
-  const float mag3PosY = sqrtf(3.0f) / 6.0f;
+  constexpr float mag3PosX = 0.5f;
+  constexpr float mag3PosY = kSqrt3 / 6.0f;
 
-  const float mag1PosX = 0.0f;
-  const float mag1PosY = -sqrtf(3.0f) / 3.0f;
+  constexpr float mag1PosX = 0.0f;
+  constexpr float mag1PosY = -kSqrt3 / 3.0f;
 
   // Rotation estimates:
   //   Ry = mag3z - mag2z
@@ -126,7 +127,7 @@ void MotionController::compute(const float raw[9], const float* baseline, float 
   //   Rx = sqrt(3) * (mag2z + mag3z - 2 * mag1z) / 3
   //     top pair minus bottom sensor
   //     -> front/back tilt of the triangle
-  const float rx = (sqrtf(3.0f) * (mag2z + mag3z - 2.0f * mag1z)) / 3.0f;
+  const float rx = (kSqrt3 * (mag2z + mag3z - 2.0f * mag1z)) / 3.0f;
   const float ry = (mag3z - mag2z);
 
   //   Rz = sum_i (posXi * magYi - posYi * magXi)

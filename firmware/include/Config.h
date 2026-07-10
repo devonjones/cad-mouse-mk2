@@ -46,7 +46,19 @@ const int ZERO_SAMPLES = 200;
 const float SMOOTH_TAU_S = 0.09;
 
 // Final axis output range
-const float AXIS_LIMIT = 350.0;
+inline constexpr float AXIS_LIMIT = 350.0f;
+
+// A dead zone at or beyond full scale would zero the axis and produce
+// NaN in the sensitivity curve's normalization. Enforce at compile time
+// so a typo in a unit header can't ship.
+constexpr bool deadZonesValid(const float (&dead)[6], float limit) {
+  for (int i = 0; i < 6; i++) {
+    if (dead[i] < 0.0f || dead[i] >= limit) return false;
+  }
+  return true;
+}
+static_assert(deadZonesValid(DEAD_AXIS, AXIS_LIMIT),
+              "unit header's DEAD_AXIS entries must be within [0, AXIS_LIMIT)");
 
 // A real SpaceMouse streams reports while deflected; refresh unchanged
 // non-zero axis reports at least this often so drivers don't see the
@@ -59,7 +71,7 @@ const int LED_BRIGHTNESS = 40;
 // Idle color palette. Cycle at runtime by holding ONLY the right button
 // for 3s while idle; the selection persists in flash across power
 // cycles. First entry is the factory default.
-const unsigned long LED_IDLE_PALETTE[] = {
+inline constexpr unsigned long LED_IDLE_PALETTE[] = {
     0x9400D3,  // purple
     0x00FF00,  // green
     0x0080FF,  // sky blue
@@ -68,7 +80,7 @@ const unsigned long LED_IDLE_PALETTE[] = {
     0xFF4000,  // orange
     0xFFFFFF,  // white
 };
-const int LED_IDLE_PALETTE_COUNT =
+inline constexpr int LED_IDLE_PALETTE_COUNT =
     sizeof(LED_IDLE_PALETTE) / sizeof(LED_IDLE_PALETTE[0]);
 static_assert(LED_DEFAULT_COLOR_INDEX >= 0 &&
                   LED_DEFAULT_COLOR_INDEX < LED_IDLE_PALETTE_COUNT,

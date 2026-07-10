@@ -75,7 +75,7 @@ void HIDController::begin() {
   // force a re-enumeration so it sees the HID-only one.
   if (TinyUSBDevice.mounted()) {
     TinyUSBDevice.detach();
-    delay(10);
+    delay(100);  // long enough for hubs/hosts to register the disconnect
     TinyUSBDevice.attach();
   }
 }
