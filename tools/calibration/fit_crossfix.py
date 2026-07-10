@@ -11,6 +11,9 @@ import numpy as np
 
 AXES = ["X", "Y", "Z", "Rx", "Ry", "Rz"]
 
+# WARNING: all four trim arrays below are UNIT 1 values. Update them to
+# the target unit's capture-time and ship-time trims before fitting any
+# other unit, or the corrections will be silently wrong.
 # The capture's telemetry is gained() = post-matrix, post-OLD-trim values.
 # Rescale to the trims the firmware will actually SHIP with, so the
 # fitted coefficients apply to what the firmware computes at runtime.

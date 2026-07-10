@@ -43,7 +43,7 @@ const int ZERO_SAMPLES = 200;
 #endif
 
 // Smoothing
-const float SMOOTH_TAU_S = 0.09;
+const float SMOOTH_TAU_S = 0.09f;
 
 // Final axis output range
 inline constexpr float AXIS_LIMIT = 350.0f;

@@ -71,13 +71,12 @@ void HIDController::begin() {
   usbHid_.setPollInterval(1);
   usbHid_.begin();
 
-  // If the host already enumerated the composite (CDC+HID) descriptor,
-  // force a re-enumeration so it sees the HID-only one.
-  if (TinyUSBDevice.mounted()) {
-    TinyUSBDevice.detach();
-    delay(100);  // long enough for hubs/hosts to register the disconnect
-    TinyUSBDevice.attach();
-  }
+  // The core may have attached the default composite (CDC+HID) descriptor
+  // before setup() ran; force a re-enumeration unconditionally so the host
+  // always reads the final HID-only descriptor.
+  TinyUSBDevice.detach();
+  delay(100);  // long enough for hubs/hosts to register the disconnect
+  TinyUSBDevice.attach();
 }
 
 void HIDController::task() { TinyUSBDevice.task(); }
