@@ -1,3 +1,10 @@
+# PRECONDITION: the capture fed to this script must come from firmware
+# whose CROSS_POS/CROSS_NEG are ALL ZERO (i.e. fresh from a fit_matrix.py
+# fit). The firmware's gained() telemetry is post-cross-fix, and this
+# script OVERWRITES the CROSS arrays rather than composing with active
+# ones — fitting from an already-corrected unit would silently discard
+# its existing correction. To re-fit: zero the unit's CROSS arrays,
+# reflash, capture, then run this.
 import re
 import sys
 import numpy as np

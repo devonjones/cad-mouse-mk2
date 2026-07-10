@@ -24,6 +24,10 @@ were fitted for one specific unit — a different build should re-run this.
 5. After flashing the fitted firmware, capture the same sequence again and
    use `fit_crossfix.py` (adjust its trim constants and phase windows first)
    to fit the residual direction-dependent CROSS_POS/CROSS_NEG corrections.
+   The capture for this step must come from firmware whose CROSS arrays are
+   all zero (a fresh matrix fit): telemetry is post-cross-fix and the script
+   overwrites rather than composes, so re-fitting an already-corrected unit
+   requires zeroing its CROSS arrays and reflashing first.
 6. Rebuild without the debug flag for the final pure-HID firmware.
 
 Flashing without opening the case: hold both buttons 10s to reboot into the

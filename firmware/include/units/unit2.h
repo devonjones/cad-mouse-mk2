@@ -4,6 +4,11 @@
 // for the initial guided capture (tools/calibration/README.md). The
 // diagonal matches fit_matrix.py's GAINS_OLD, so a capture taken on
 // this config feeds the fit directly. Replace with fitted values.
+//
+// Conventions (same as every unit header): axis order TX, TY, TZ, RX,
+// RY, RZ; pipeline v = SIGN_AXIS .* sensed, out = DECOUPLE @ v, then
+// per-direction TRIM; output units are AXIS_LIMIT (350) = full
+// deflection, matching a genuine SpaceMouse.
 const int SIGN_AXIS[6] = {+1, -1, +1, -1, -1, -1};
 const float DECOUPLE[6][6] = {
     {48.0, 0.0, 0.0, 0.0, 0.0, 0.0},

@@ -64,8 +64,8 @@ void IdleState::update() {
     lastActivityMs_ = now;
   }
 
-  const float dt = (lastUpdateMs_ == 0) ? 0.01
-                                        : ((now - lastUpdateMs_) / 1000.0);
+  const float dt = (lastUpdateMs_ == 0) ? 0.01f
+                                        : ((now - lastUpdateMs_) / 1000.0f);
   lastUpdateMs_ = now;
   runMotionPipeline(dt, now);
   handleSleepTransition(now);

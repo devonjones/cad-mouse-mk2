@@ -41,7 +41,6 @@ void InputController::update() {
   leftBtn_.check();
   rightBtn_.check();
 
-  // Right-button-only hold cycles the idle LED color.
   if (rightPressed_ && !leftPressed_) {
     if (rightHoldStartMs_ == 0) {
       rightHoldStartMs_ = now;
@@ -73,7 +72,7 @@ void InputController::update() {
     calibrationHoldFired_ = true;
   }
 
-  if ((now - bothHeldStartMs_) >= kBootloaderHoldMs) {
+  if (bothHeldStartMs_ != 0 && (now - bothHeldStartMs_) >= kBootloaderHoldMs) {
     rp2040.rebootToBootloader();
   }
 }

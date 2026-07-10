@@ -155,17 +155,17 @@ bool HIDController::sendReports(const float motion[6], uint16_t buttonBits) {
           return true;
         }
         break;
-      case 2:
-        if (needButtons) {
-          ReportButtons btn{};
-          btn.bits = buttonBits & 0x0003;
-          if (usbHid_.sendReport(0x03, &btn, sizeof(btn))) {
-            buttonBitsSent_ = buttonBits;
-            nextReportSlot_ = 0;
-            return true;
-          }
+      case 2: {
+        if (!needButtons) break;
+        ReportButtons btn{};
+        btn.bits = buttonBits & 0x0003;
+        if (usbHid_.sendReport(0x03, &btn, sizeof(btn))) {
+          buttonBitsSent_ = buttonBits;
+          nextReportSlot_ = 0;
+          return true;
         }
         break;
+      }
     }
   }
   return false;
