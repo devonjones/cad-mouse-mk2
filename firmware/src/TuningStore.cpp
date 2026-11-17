@@ -75,16 +75,19 @@ TuningStatus validate(const TuningConfig& c) {
   if (!valuesSane(c)) return TuningStatus::BadValues;
   return TuningStatus::Loaded;
 }
-}  // namespace
-
-void loadTuning() {
+// Takes the source address so the host tests can drive it with a buffer.
+void loadTuningFrom(const void* src) {
   // XIP flash is memory-mapped; copy the candidate block into RAM before
   // validating so all later reads are RAM-speed and tear-free.
   TuningConfig candidate;
-  memcpy(&candidate, reinterpret_cast<const void*>(TUNING_FLASH_ADDR),
-         sizeof(candidate));
+  memcpy(&candidate, src, sizeof(candidate));
   status_ = validate(candidate);
   if (status_ == TuningStatus::Loaded) active_ = candidate;
+}
+}  // namespace
+
+void loadTuning() {
+  loadTuningFrom(reinterpret_cast<const void*>(TUNING_FLASH_ADDR));
 }
 
 TuningStatus tuningStatus() { return status_; }

@@ -151,6 +151,22 @@ class FirmwareValidation(unittest.TestCase):
     def tearDownClass(cls):
         cls.tmp.cleanup()
 
+    def run_exe(self, *args, blob=b""):
+        return subprocess.run([str(self.exe), *args], input=blob,
+                              capture_output=True, check=True).stdout.decode()
+
+    def test_load_applies_only_valid_blocks(self):
+        good = mk.build_blob(load("unit1"))
+        self.assertEqual(self.run_exe("--load", blob=good).split(),
+                         [str(self.LOADED), "blob"])
+        bad = bytearray(good)
+        bad[100] ^= 1
+        self.assertEqual(self.run_exe("--load", blob=bytes(bad)).split(),
+                         [str(self.BAD_CRC), "defaults"])
+
+    def test_compiled_defaults_pass_value_checks(self):
+        self.assertEqual(self.run_exe("--defaults-sane").strip(), "1")
+
     def status(self, blob):
         r = subprocess.run([str(self.exe)], input=blob, capture_output=True,
                            check=True)
@@ -196,6 +212,7 @@ class FirmwareValidation(unittest.TestCase):
         bad_crc[100] ^= 1
         cases = {
             "erased flash": (erased, self.ABSENT),
+            "zeroed flash": (b"\x00" * 556, self.ABSENT),
             "other version": (self.resign(bytes(bad_version)),
                               self.BAD_VERSION),
             "bit flip": (bytes(bad_crc), self.BAD_CRC),
