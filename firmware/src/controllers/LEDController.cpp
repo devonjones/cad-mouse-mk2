@@ -3,6 +3,7 @@
 #include <EEPROM.h>
 
 #include "Config.h"
+#include "TuningConfig.h"
 
 namespace {
 // Flash-persisted settings layout (RP2040 EEPROM emulation).
@@ -33,7 +34,7 @@ void LEDController::begin() {
   pinMode(Config::PIN_LED_LS, OUTPUT);
   digitalWrite(Config::PIN_LED_LS, LOW);
 
-  idleColorIndex_ = Config::LED_DEFAULT_COLOR_INDEX;
+  idleColorIndex_ = tuning().led_default_color_index;
   EEPROM.begin(kEepromSize);
   if (EEPROM.read(kMagicAddr) == kMagic) {
     const uint8_t idx = EEPROM.read(kColorIndexAddr);

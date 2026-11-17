@@ -28,19 +28,7 @@ const int PIN_MAG3_LS = D8;
 // Samples for calibration offset
 const int ZERO_SAMPLES = 200;
 
-// Per-unit calibration (DECOUPLE, TRIM, DEAD_AXIS, CURVE_EXPO, CROSS,
-// LED default). Each physical unit has its own fitted header — select
-// with -DUNIT=<n> (platformio.ini defines one env per unit).
-#ifndef UNIT
-#define UNIT 1
-#endif
-#if UNIT == 1
-#include "units/unit1.h"
-#elif UNIT == 2
-#include "units/unit2.h"
-#else
-#error "Unknown UNIT - add firmware/include/units/unit<n>.h"
-#endif
+#include "units/default.h"
 
 // Smoothing
 const float SMOOTH_TAU_S = 0.09f;
@@ -50,7 +38,7 @@ inline constexpr float AXIS_LIMIT = 350.0f;
 
 // A dead zone at or beyond full scale would zero the axis and produce
 // NaN in the sensitivity curve's normalization. Enforce at compile time
-// so a typo in a unit header can't ship.
+// so a typo in units/default.h can't ship.
 constexpr bool deadZonesValid(const float (&dead)[6], float limit) {
   for (int i = 0; i < 6; i++) {
     if (dead[i] < 0.0f || dead[i] >= limit) return false;
@@ -58,7 +46,7 @@ constexpr bool deadZonesValid(const float (&dead)[6], float limit) {
   return true;
 }
 static_assert(deadZonesValid(DEAD_AXIS, AXIS_LIMIT),
-              "unit header's DEAD_AXIS entries must be within [0, AXIS_LIMIT)");
+              "units/default.h DEAD_AXIS entries must be within [0, AXIS_LIMIT)");
 
 // A real SpaceMouse streams reports while deflected; refresh unchanged
 // non-zero axis reports at least this often so drivers don't see the
@@ -82,9 +70,11 @@ inline constexpr unsigned long LED_IDLE_PALETTE[] = {
 };
 inline constexpr int LED_IDLE_PALETTE_COUNT =
     sizeof(LED_IDLE_PALETTE) / sizeof(LED_IDLE_PALETTE[0]);
+static_assert(LED_IDLE_PALETTE_COUNT == 7,
+              "update LED_PALETTE_COUNT in tools/config/make_config_uf2.py");
 static_assert(LED_DEFAULT_COLOR_INDEX >= 0 &&
                   LED_DEFAULT_COLOR_INDEX < LED_IDLE_PALETTE_COUNT,
-              "unit header's LED_DEFAULT_COLOR_INDEX is outside the palette");
+              "units/default.h LED_DEFAULT_COLOR_INDEX is outside the palette");
 const unsigned long LED_CALIBRATING_COLOR = 0x0000FF;
 
 // FSM timing

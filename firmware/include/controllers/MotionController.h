@@ -15,7 +15,6 @@ class MotionController {
   static float hardZero(float v, float thr);
   static float shapeAxis(float v, float dead, float expo);
   static float lowpass(float prev, float x, float dt, float tau);
-  static float axisBaseDead(int i);
   float filt_[6] = {};
   float gained_[6] = {};
   bool motionActive_ = false;

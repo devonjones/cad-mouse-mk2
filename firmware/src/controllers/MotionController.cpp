@@ -4,6 +4,7 @@
 #include <math.h>
 
 #include "Config.h"
+#include "TuningConfig.h"
 
 namespace {
 enum RawIndex {
@@ -30,28 +31,30 @@ enum AxisIndex {
 // Sign fixes, fitted decoupling matrix (gain + cross-axis cancellation),
 // then per-direction trims for the asymmetric magnet/sensor response.
 void decouple(const float sensed[6], float y[6]) {
+  const TuningConfig& t = tuning();
   float v[6];
   for (int i = 0; i < 6; i++) {
-    v[i] = Config::SIGN_AXIS[i] * sensed[i];
+    v[i] = t.sign_axis[i] * sensed[i];
   }
   for (int i = 0; i < 6; i++) {
     float acc = 0.0f;
     for (int j = 0; j < 6; j++) {
-      acc += Config::DECOUPLE[i][j] * v[j];
+      acc += t.decouple[i][j] * v[j];
     }
-    y[i] = acc * (acc >= 0.0f ? Config::TRIM_POS[i] : Config::TRIM_NEG[i]);
+    y[i] = acc * (acc >= 0.0f ? t.trim_pos[i] : t.trim_neg[i]);
   }
 }
 
 // Second-stage correction for the direction-dependent coupling the
 // linear matrix leaves behind (e.g. roll dragging pan along).
 void applyCrossFix(const float y[6], float yc[6]) {
+  const TuningConfig& t = tuning();
   for (int i = 0; i < 6; i++) {
     float acc = y[i];
     for (int j = 0; j < 6; j++) {
       if (j == i) continue;
-      const float c = (y[j] >= 0.0f) ? Config::CROSS_POS[j][i]
-                                     : Config::CROSS_NEG[j][i];
+      const float c = (y[j] >= 0.0f) ? t.cross_pos[j][i]
+                                     : t.cross_neg[j][i];
       acc -= c * y[j];
     }
     yc[i] = acc;
@@ -80,10 +83,6 @@ float MotionController::lowpass(float prev, float x, float dt, float tau) {
   if (tau <= 0.0f) return x;
   const float a = dt / (tau + dt);
   return prev + a * (x - prev);
-}
-
-float MotionController::axisBaseDead(int i) {
-  return Config::DEAD_AXIS[i];
 }
 
 void MotionController::compute(const float raw[9], const float* baseline, float dt,
@@ -153,11 +152,12 @@ void MotionController::compute(const float raw[9], const float* baseline, float 
   // shaped value ramps smoothly from zero at the dead-zone edge, so a
   // light touch produces small-but-present motion instead of nothing.
   motionActive_ = false;
+  const TuningConfig& t = tuning();
   for (int i = 0; i < 6; i++) {
     const float shaped =
-        shapeAxis(yc[i], axisBaseDead(i), Config::CURVE_EXPO[i]);
+        shapeAxis(yc[i], t.dead_axis[i], t.curve_expo[i]);
 
-    filt_[i] = lowpass(filt_[i], shaped, dt, Config::SMOOTH_TAU_S);
+    filt_[i] = lowpass(filt_[i], shaped, dt, t.smooth_tau_s);
 
     const float limited =
         clampf(filt_[i], -Config::AXIS_LIMIT, Config::AXIS_LIMIT);

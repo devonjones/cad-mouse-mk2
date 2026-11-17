@@ -107,19 +107,23 @@ print("\n== post-matrix rest noise floor (trimmed) ==")
 for a, f in zip(AXES, floor_trimmed):
     print(f"{a:>3}: {f:6.1f}")
 
-# Emit C config
-def carr(v):
-    return "{" + ", ".join(f"{x:.4f}" for x in v) + "}"
+def jarr(v):
+    return "[" + ", ".join(f"{x:.4f}" for x in v) + "]"
 
-print("\n== Config.h snippets ==")
-print("const float DECOUPLE[6][6] = {")
-for i in range(6):
-    print("    " + carr(M[i]) + ("," if i < 5 else ""))
-print("};")
-print(f"const float TRIM_POS[6] = {carr(trims_pos)};")
-print(f"const float TRIM_NEG[6] = {carr(trims_neg)};")
+
+def emit_json(decouple, trims_pos, trims_neg):
+    lines = ['"decouple": [']
+    lines += ["  " + jarr(decouple[i]) + ("," if i < 5 else "")
+              for i in range(6)]
+    lines += ["],", f'"trim_pos": {jarr(trims_pos)},',
+              f'"trim_neg": {jarr(trims_neg)}']
+    print("\n".join(lines))
+
+
+print("\n== configs/<unit>.json fragment ==")
+emit_json(M, trims_pos, trims_neg)
 dead = np.maximum(np.round(floor_trimmed * 1.7), 10)
-print(f"suggested DEAD_AXIS = {carr(dead)}")
+print(f"suggested dead_axis: {jarr(dead)}")
 
 # ---- Ridge fit toward diagonal prior, lambda sweep ----
 print("\n\n==== RIDGE SWEEP (shrink toward per-axis diagonal gains) ====")
@@ -162,10 +166,5 @@ for lam in [0.0, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0]:
 # ---- Final emit at chosen lambda ----
 print("\n==== FINAL (lam=10) ====")
 Mr, tp, tn, worst, floor = evaluate(10.0)
-print("const float DECOUPLE[6][6] = {")
-for i in range(6):
-    print("    " + carr(Mr[i]) + ("," if i < 5 else ""))
-print("};")
-print(f"const float TRIM_POS[6] = {carr(tp)};")
-print(f"const float TRIM_NEG[6] = {carr(tn)};")
+emit_json(Mr, tp, tn)
 print("floors: " + " ".join(f"{a}:{f:.0f}" for a, f in zip(AXES, floor)))
