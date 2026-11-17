@@ -20,15 +20,6 @@ void setup() {
 
   if (Config::ENABLE_TELEMETRY) {
     Serial.begin(115200);
-    delay(200);
-    // TuningStatus value; see TuningConfig.h.
-    Serial.print(">tuning_status:");
-    Serial.println(static_cast<int>(tuningStatus()));
-    const uint32_t* raw = reinterpret_cast<const uint32_t*>(TUNING_FLASH_ADDR);
-    Serial.print(">flash_magic:");
-    Serial.println(raw[0], HEX);
-    Serial.print(">active_decouple00:");
-    Serial.println(tuning().decouple[0][0]);
   }
 
   inputController.begin();
