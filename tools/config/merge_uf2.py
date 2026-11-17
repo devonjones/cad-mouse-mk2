@@ -29,9 +29,6 @@ def sector_aligned(blocks):
     by_sector = {}
     for b in blocks:
         (addr,) = struct.unpack_from("<I", b, 12)
-        (size,) = struct.unpack_from("<I", b, 16)
-        if size != PAGE or addr % PAGE:
-            sys.exit(f"block at 0x{addr:08X}: expected 256-byte page-aligned payloads")
         by_sector.setdefault(addr // SECTOR, {})[addr] = b
     out = []
     template = blocks[0]
@@ -71,7 +68,11 @@ def main():
                 sys.exit(f"{p}: block {i // BLOCK} has bad UF2 magic")
             # Overlapping writes would make the result depend on block
             # order; refuse rather than guess which input wins.
-            (addr,) = struct.unpack_from("<I", b, 12)
+            addr, size = struct.unpack_from("<II", b, 12)
+            if size != PAGE or addr % PAGE:
+                sys.exit(f"{p}: block {i // BLOCK} at 0x{addr:08X} has a "
+                         f"{size}-byte payload; expected 256-byte, "
+                         f"page-aligned payloads")
             if addr in targets:
                 sys.exit(f"{p}: address 0x{addr:08X} also written by "
                          f"{targets[addr]}")

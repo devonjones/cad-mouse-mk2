@@ -348,12 +348,13 @@ class MergeUf2(unittest.TestCase):
                 # every 16-block group targets exactly one 4 KB sector
                 self.assertEqual(addr & ~0xFFF,
                                  struct.unpack_from("<I", blocks[i - i % 16], 12)[0] & ~0xFFF)
+            for b in blocks[3:16] + blocks[19:]:  # filler pages
+                self.assertEqual(struct.unpack_from("<I", b, 16)[0], 256)
+                self.assertEqual(b[32:32 + 256], b"\xff" * 256)
             self.assertEqual(payload(b"".join(blocks[16:])),
                              mk.build_blob(load("unit1")))
 
     def test_merged_config_survives_bootrom_on_dirty_flash(self):
-        # Firmware ending mid-group plus a config at another sector is the
-        # case that used to leave the config sector unerased.
         blob = mk.build_blob(load("unit1"))
         with tempfile.TemporaryDirectory() as d:
             fw = self.write(d, "fw.uf2", mk.to_uf2(bytes(range(256)) * 19,
@@ -362,7 +363,7 @@ class MergeUf2(unittest.TestCase):
             r, out = self.run_merge(d, fw, cfg)
             self.assertEqual(r.returncode, 0, r.stderr)
             flash = bootrom_flash(out.read_bytes(), start=0x00)
-            got = bytes(flash[mk.TUNING_FLASH_ADDR + i] for i in range(556))
+            got = bytes(flash[mk.TUNING_FLASH_ADDR + i] for i in range(len(blob)))
             self.assertEqual(got, blob)
             fw_bytes = bytes(flash[0x10000000 + i] for i in range(256 * 19))
             self.assertEqual(fw_bytes, bytes(range(256)) * 19)
@@ -381,6 +382,20 @@ class MergeUf2(unittest.TestCase):
             r, _ = self.run_merge(d, c, b)
             self.assertNotEqual(r.returncode, 0)
             self.assertIn("bad UF2 magic", r.stderr)
+
+            half = bytearray(mk.to_uf2(b"\0" * 10, 0x10010000))
+            struct.pack_into("<I", half, 16, 128)  # 128-byte payload
+            h = self.write(d, "h.uf2", bytes(half))
+            r, _ = self.run_merge(d, h, b)
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("128-byte payload", r.stderr)
+
+            odd = bytearray(mk.to_uf2(b"\0" * 10, 0x10010000))
+            struct.pack_into("<I", odd, 12, 0x10010080)  # not page-aligned
+            o = self.write(d, "o.uf2", bytes(odd))
+            r, _ = self.run_merge(d, o, b)
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("page-aligned", r.stderr)
 
             t = self.write(d, "t.uf2", a.read_bytes()[:500])
             r, _ = self.run_merge(d, t, b)
