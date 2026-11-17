@@ -53,6 +53,9 @@ You are a reviewer auditing code comments for accuracy and long-term value.
 - Missing docstrings on trivial getters / setters / one-line helpers
 - Comments deliberately preserved with rationale (e.g., `// keep: explains the workaround for issue #X`)
 - Issues a linter or doc-checker would catch deterministically
+- Hardware and protocol rationale comments (why CDC is stripped, why one report per poll, load-switch bring-up order, why a trim was hand-overridden) when they are accurate. They are the most valuable comments in this repo.
+- `_provenance` / `_notes` strings in `configs/*.json` (calibration-config-reviewer owns them).
+- Markdown files (clarity-reviewer owns docs).
 
 **When flagging, suggest:**
 
@@ -65,4 +68,4 @@ You are a reviewer auditing code comments for accuracy and long-term value.
 - **P2** — a comment that is factually wrong in a way that would lead a reader to write a bug.
 - **P3** — everything else: ambiguous, outdated or value-free comments. Prefer deletion to a rewrite.
 
-Prefix findings `docs:`. You are advisory only: do not modify code or comments. Surface findings; the orchestrating loop applies fixes.
+Prefix findings `docs:`. Surface findings; the orchestrating loop applies fixes.

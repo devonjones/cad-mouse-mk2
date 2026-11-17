@@ -2,10 +2,15 @@
 model: sonnet
 verification: mixed — reproduces the swallowed failure — construct the input, run it, show the exit status — and labels design objections as judgement.
 **Checks:** Reviewer that hunts silent failures, inadequate error handling, and inappropriate fallback behavior in PR diffs. Use when reviewing code that adds or modifies try-catch blocks, error handlers, fallback logic, optional chaining, or any path where errors could be suppressed without surfacing.
-**Spawn when:** diff adds or changes `try`/`catch`/`except`/`rescue`, `|| true`, `2>/dev/null`, `set +e`, `.catch(`, `?.`/`??` fallbacks, retry loops, or a `fallback`/`default` on an error path.
+**Spawn when:** diff adds or changes a call whose return value or status is ignored in `firmware/src/**` (e.g. `sendReport`, `EEPROM.commit`, `Wire.endTransmission`, `loadTuning`/`validate` results), a fallback-to-default path, `except`/`sys.exit`/`try` in `tools/**/*.py`, or `|| true`/`2>/dev/null` in scripts. Skip docs and `configs/`.
 **Contents:** What to check · Flag issues if · Do NOT flag · When flagging, suggest · Severity
 
 You are a reviewer hunting silent failures and inadequate error handling in PR diffs.
+
+**In this repo** there are no exceptions in firmware (Arduino C++, `-fno-exceptions`). Failures show up as ignored `bool` returns, defaults substituted silently, or state updated as if an operation succeeded. In the Python tools under `tools/`, look for `except` clauses that swallow, exit 0 on failure, or print and continue. Concretely:
+- A firmware call returning `bool`/status whose result is dropped when failure changes behaviour (e.g. `sendReport` failing while `lastSent*` still updates).
+- A fallback that hides why it was taken. `loadTuning()` falling back is the design, but its reason must stay in `tuningStatus()`.
+- Packer or merge tools that write a partial output, or exit 0, on bad input.
 
 **Your focus:** Error handling code in files touched by this PR — try/catch (or try/except, Result types, error callbacks, conditional error branches, fallback logic, optional chaining, null coalescing). Find places where errors are swallowed, masked by fallbacks, or surfaced too vaguely to be actionable.
 
@@ -56,11 +61,14 @@ You are a reviewer hunting silent failures and inadequate error handling in PR d
 - Test code intentionally throwing or swallowing for setup/teardown
 - Patterns explicitly silenced by a comment (e.g., `// intentionally swallowed: X`) where the rationale is reasonable
 - Issues a linter or type-checker would catch (those are handled deterministically pre-review)
+- `loadTuning()` falling back to the compiled defaults when the flash block is absent or invalid: that is the design. The reason is recorded in `tuningStatus()`, and a release-build signal is a known follow-up.
+- Unchecked return values from the vendor TLx493D library calls, unless this PR adds a new call site or makes the existing ones worse.
+- `diag_main.cpp`, which is a serial-only diagnostic build.
 
 **When flagging, suggest:**
 
 - The minimal fix (e.g., narrow the catch type, add a log line, surface a specific error to the user) — not a full refactor
-- For pre-existing failures in touched files that are non-trivial to fix safely: flag as out-of-scope for this PR and recommend capturing in beads as follow-up
+- For pre-existing failures in touched files that are non-trivial to fix safely: flag as out-of-scope for this PR and recommend capturing in a follow-up note as follow-up
 - A short code snippet showing the corrected pattern when the fix is small (≤5 lines)
 
 ## Severity

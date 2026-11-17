@@ -1,21 +1,26 @@
 # complexity-reviewer
-**Checks:** TODO
-**Spawn when:** TODO
+model: sonnet
+verification: evidence-query — measures what it flags (function line count with `awk`, nesting depth, number of responsibilities named) and quotes the numbers before and after the PR.
+**Checks:** firmware functions that grow past one screen, mix responsibilities, or nest more than three levels deep; blocks that should be a named pipeline step or anonymous-namespace helper.
+**Spawn when:** diff adds or changes more than ~20 lines inside one function in `firmware/src/**` (not `diag_main.cpp`), or adds nesting depth >3 there. Skip `tools/`, tests, docs and configs.
+**Contents:** Your focus · Heuristics · Severity · Do NOT flag · Proof
 
-Review **production firmware code only** for function complexity. Skip test files and `tools/` scripts.
+**Your focus:** production firmware only. The motion pipeline is the closest thing to a house pattern: `decouple()` (matrix plus trims) and `applyCrossFix()` are file-local functions, and shaping, filtering and clamping are small private statics (`shapeAxis`, `lowpass`, `clampf`) called from `compute()`.
 
-Apply these heuristics:
+**Heuristics:**
 
-1. **"And/Or" test:** minimize the conjunctions needed to describe a function. "Computes motion from raw fields" good; "computes motion AND sends reports AND updates LEDs" bad.
+1. **"And/or" test:** describe the function in one sentence. "Computes motion from raw fields" is good; "computes motion AND sends reports AND updates LEDs" is a finding.
+2. **One-screen rule:** about 50–60 lines. Flag a function that crosses it *because of this PR*, and give the before and after counts.
+3. **Extractable blocks:** a block with its own purpose inside a long function should become a private method or anonymous-namespace function.
+4. **Nesting:** more than 3 levels. Prefer early returns.
 
-2. **One-screen rule:** functions should fit on one screen (~50-60 lines). The motion pipeline stages are the pattern to follow: each transform (decouple, trim, cross-fix, shape, filter) is a distinct, nameable step.
-
-3. **Extractable blocks:** a block with a clear purpose inside a long function should become a private method or file-local function in the anonymous namespace (the codebase's existing idiom).
-
-4. **Nesting depth:** flag more than 3 levels of nesting; prefer early returns.
+**Severity:** P2 when this PR makes a function mix responsibilities or pushes nesting past 3; P3 for length alone or an extractable block. Never P1.
 
 **Do NOT flag:**
-- Long but linear functions (sequential pipeline steps, hardware bring-up sequences)
-- `switch` statements with many cases
-- HID descriptor byte arrays and config tables (long but not complex)
-- `diag_main.cpp` (deliberately flat and verbose for debuggability)
+- Long but linear functions: sequential pipeline stages (`MotionController::compute`), hardware bring-up sequences (`SensorController::begin`, `HIDController::begin`).
+- `switch` statements with many cases, the HID descriptor byte array, config tables.
+- `diag_main.cpp` (deliberately flat for debuggability).
+- Length that predates the PR: if the PR adds under ~5 lines to an already-long function, it is not this PR's finding.
+- Python tools under `tools/` (outside this lens; code-simplifier covers them).
+
+**Proof:** quote the line counts (`awk` over the function's span on base and head) and name each responsibility you count.
