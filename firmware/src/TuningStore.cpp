@@ -6,7 +6,6 @@
 #include "Config.h"
 
 namespace {
-TuningConfig active_;
 
 uint32_t crc32(const uint8_t* data, size_t len) {
   uint32_t crc = 0xFFFFFFFF;
@@ -19,7 +18,8 @@ uint32_t crc32(const uint8_t* data, size_t len) {
   return ~crc;
 }
 
-void loadDefaults(TuningConfig& c) {
+TuningConfig makeDefaults() {
+  TuningConfig c;
   memset(&c, 0, sizeof(c));
   c.magic = TUNING_MAGIC;
   c.version = TUNING_VERSION;
@@ -37,13 +37,20 @@ void loadDefaults(TuningConfig& c) {
   }
   c.smooth_tau_s = Config::SMOOTH_TAU_S;
   c.led_default_color_index = Config::LED_DEFAULT_COLOR_INDEX;
+  return c;
 }
+
+// Dynamic init runs before setup(), so tuning() is valid from the start.
+TuningConfig active_ = makeDefaults();
+TuningStatus status_ = TuningStatus::Absent;
+
+bool coeffOk(float x) { return isfinite(x) && fabsf(x) <= TUNING_MAX_COEFF; }
 
 bool valuesSane(const TuningConfig& c) {
   for (int i = 0; i < 6; i++) {
     for (int j = 0; j < 6; j++) {
-      if (!isfinite(c.decouple[i][j]) || !isfinite(c.cross_pos[i][j]) ||
-          !isfinite(c.cross_neg[i][j])) {
+      if (!coeffOk(c.decouple[i][j]) || !coeffOk(c.cross_pos[i][j]) ||
+          !coeffOk(c.cross_neg[i][j])) {
         return false;
       }
     }
@@ -57,29 +64,28 @@ bool valuesSane(const TuningConfig& c) {
   if (c.led_default_color_index >= Config::LED_IDLE_PALETTE_COUNT) return false;
   return true;
 }
+
+TuningStatus validate(const TuningConfig& c) {
+  if (c.magic != TUNING_MAGIC) return TuningStatus::Absent;
+  if (c.version != TUNING_VERSION) return TuningStatus::BadVersion;
+  const uint32_t expected = crc32(reinterpret_cast<const uint8_t*>(&c),
+                                  sizeof(c) - sizeof(c.crc32));
+  if (c.crc32 != expected) return TuningStatus::BadCrc;
+  if (!valuesSane(c)) return TuningStatus::BadValues;
+  return TuningStatus::Loaded;
+}
 }  // namespace
 
-void TuningStore::begin() {
+void loadTuning() {
   // XIP flash is memory-mapped; copy the candidate block into RAM before
   // validating so all later reads are RAM-speed and tear-free.
   TuningConfig candidate;
   memcpy(&candidate, reinterpret_cast<const void*>(TUNING_FLASH_ADDR),
          sizeof(candidate));
-
-  const uint32_t expected =
-      crc32(reinterpret_cast<const uint8_t*>(&candidate),
-            sizeof(candidate) - sizeof(candidate.crc32));
-
-  if (candidate.magic == TUNING_MAGIC &&
-      candidate.version == TUNING_VERSION &&
-      candidate.crc32 == expected && valuesSane(candidate)) {
-    active_ = candidate;
-    fromFlash_ = true;
-    return;
-  }
-
-  loadDefaults(active_);
-  fromFlash_ = false;
+  status_ = validate(candidate);
+  if (status_ == TuningStatus::Loaded) active_ = candidate;
 }
+
+TuningStatus tuningStatus() { return status_; }
 
 const TuningConfig& tuning() { return active_; }

@@ -18,17 +18,20 @@ python3 tools/config/merge_uf2.py unit1-full.uf2 \
 
 Enter the bootloader (hold both buttons 10s → `RPI-RP2` drive) and copy
 `unit1-full.uf2` onto it. Config-only updates (tuning tweaks, no firmware
-change) can copy just `<unit>-config.uf2` — flashing the config block does
-not disturb the firmware, and vice versa: flashing only `firmware.uf2`
-preserves the config block.
+change) can copy just `<unit>-config.uf2`; the firmware and config occupy
+separate flash regions, so either can be reflashed alone.
 
 ## Notes
 
-- The JSON keys map 1:1 to the `TuningConfig` fields; `_unit` and
-  `_provenance` are documentation and ignored by the packer.
-- The packer sanity-checks values (dead zones vs full scale, trim/expo
-  ranges, sign values) and refuses to build a bad block; the firmware
-  re-checks at boot and falls back to defaults rather than run bad data.
+- The JSON keys map 1:1 to the `TuningConfig` fields; keys starting with
+  `_` (`_unit`, `_provenance`, `_notes`) are documentation and ignored by
+  the packer.
+- The packer applies the firmware's boot-time checks to the float32-rounded
+  values, so a block it builds is not rejected at boot. A debug-serial
+  build reports why a block was rejected: `>tuning_status:` is 0 loaded,
+  1 absent, 2 wrong version, 3 bad CRC, 4 bad values.
+- `python3 -m unittest discover tools/config` runs the packer/merge tests,
+  which also check the packer's constants against the firmware headers.
 - If the `TuningConfig` layout changes, bump `TUNING_VERSION` in both the
   header and `make_config_uf2.py` — old blocks then fail validation and
   the defaults apply until a new config is deployed.

@@ -28,10 +28,6 @@ const int PIN_MAG3_LS = D8;
 // Samples for calibration offset
 const int ZERO_SAMPLES = 200;
 
-// Compiled-default tuning, used only when no valid per-unit config block
-// is present in flash. Real units get their calibration deployed as a
-// config UF2 from configs/<unit>.json (see tools/config/README.md); the
-// binary itself is unit-agnostic.
 #include "units/default.h"
 
 // Smoothing
@@ -74,6 +70,8 @@ inline constexpr unsigned long LED_IDLE_PALETTE[] = {
 };
 inline constexpr int LED_IDLE_PALETTE_COUNT =
     sizeof(LED_IDLE_PALETTE) / sizeof(LED_IDLE_PALETTE[0]);
+static_assert(LED_IDLE_PALETTE_COUNT == 7,
+              "update LED_PALETTE_COUNT in tools/config/make_config_uf2.py");
 static_assert(LED_DEFAULT_COLOR_INDEX >= 0 &&
                   LED_DEFAULT_COLOR_INDEX < LED_IDLE_PALETTE_COUNT,
               "units/default.h LED_DEFAULT_COLOR_INDEX is outside the palette");

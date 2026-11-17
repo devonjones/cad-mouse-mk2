@@ -99,10 +99,11 @@ for axis, sign, t0, t1 in PHASES:
             ratios.append(f"{AXES[tgt]}:{r:+.3f}")
     print(f"{lbl:>4}: src {src:7.1f}   corrections: {' '.join(ratios) or '-'}")
 
-def carr2(M):
-    rows = [",\n    ".join(
-        "{" + ", ".join(f"{x:.4f}" for x in M[i]) + "}" for i in range(6))]
-    return "{\n    " + rows[0] + "\n};"
+def jmat(M):
+    rows = ",\n  ".join(
+        "[" + ", ".join(f"{x:.4f}" for x in M[i]) + "]" for i in range(6))
+    return "[\n  " + rows + "\n]"
 
-print("\nconst float CROSS_POS[6][6] = " + carr2(CROSS_POS))
-print("const float CROSS_NEG[6][6] = " + carr2(CROSS_NEG))
+print("\n== configs/<unit>.json fragment ==")
+print('"cross_pos": ' + jmat(CROSS_POS) + ",")
+print('"cross_neg": ' + jmat(CROSS_NEG))

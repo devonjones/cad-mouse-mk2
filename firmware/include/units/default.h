@@ -1,11 +1,8 @@
 #pragma once
 
-// Compiled-default tuning: safe bootstrap values used only when no valid
-// per-unit config block is present in flash (see TuningConfig.h and
-// tools/config/README.md — real units get their calibration deployed as a
-// config UF2, not compiled in). The diagonal matches fit_matrix.py's
-// GAINS_OLD, so a calibration capture taken on these defaults feeds the
-// fit directly.
+// Fallback tuning (see TuningConfig.h). The diagonal matches
+// fit_matrix.py's GAINS_OLD, so a calibration capture taken on these
+// defaults feeds the fit directly.
 //
 // Axis order: TX, TY, TZ, RX, RY, RZ. Output units: AXIS_LIMIT (350) =
 // full deflection. Pipeline semantics live on decouple()/applyCrossFix()

@@ -26,10 +26,10 @@ UF2_FLAG_FAMILY_ID = 0x00002000
 RP2040_FAMILY_ID = 0xE48BFF56
 
 
-# Must match LED_IDLE_PALETTE_COUNT in firmware/include/Config.h; the
-# firmware rejects the whole block (falls back to defaults) if it's out of
-# range, so catch it here instead.
+# Must match LED_IDLE_PALETTE_COUNT in firmware/include/Config.h (a
+# static_assert there and test_config_tools.py both guard the pairing).
 LED_PALETTE_COUNT = 7
+MAX_COEFF = 1000.0  # TUNING_MAX_COEFF
 
 FIELDS = ("sign_axis", "decouple", "trim_pos", "trim_neg", "dead_axis",
           "curve_expo", "cross_pos", "cross_neg", "smooth_tau_s",
@@ -51,11 +51,19 @@ def finite(x):
         and math.isfinite(x)
 
 
+def f32(key, x):
+    # Validate what the firmware will see: the float32-rounded value.
+    check(finite(x), f"{key}: non-finite or non-numeric value {x!r}")
+    try:
+        return struct.unpack("<f", struct.pack("<f", x))[0]
+    except OverflowError:
+        raise ConfigError(f"{key}: {x!r} does not fit in a float32")
+
+
 def vec(cfg, key, n=6):
     v = cfg[key]
     check(isinstance(v, list) and len(v) == n, f"{key}: expected {n} values")
-    check(all(finite(x) for x in v), f"{key}: non-finite or non-numeric value")
-    return v
+    return [f32(key, x) for x in v]
 
 
 def flat(cfg, key):
@@ -69,16 +77,21 @@ def build_blob(cfg):
     check(keys == set(FIELDS),
           f"keys: missing {sorted(set(FIELDS) - keys)}, "
           f"unknown {sorted(keys - set(FIELDS))}")
-    signs = vec(cfg, "sign_axis")
-    check(all(s in (1, -1) for s in signs), "sign_axis entries must be +/-1")
+    signs = cfg["sign_axis"]
+    check(isinstance(signs, list) and len(signs) == 6
+          and all(type(s) is int and s in (1, -1) for s in signs),
+          "sign_axis must be 6 integers, each 1 or -1")
+    for key in ("decouple", "cross_pos", "cross_neg"):
+        check(all(abs(x) <= MAX_COEFF for x in flat(cfg, key)),
+              f"{key}: |value| exceeds {MAX_COEFF}")
     dead = vec(cfg, "dead_axis")
     check(all(0.0 <= d < AXIS_LIMIT for d in dead), "dead zone out of range")
     expo = vec(cfg, "curve_expo")
     check(all(0.5 <= e <= 5.0 for e in expo), "curve expo out of range")
     for key in ("trim_pos", "trim_neg"):
         check(all(0.0 < t < 10.0 for t in vec(cfg, key)), f"{key} out of range")
-    tau = cfg["smooth_tau_s"]
-    check(finite(tau) and 0.0 <= tau <= 1.0, "smooth_tau_s out of range")
+    tau = f32("smooth_tau_s", cfg["smooth_tau_s"])
+    check(0.0 <= tau <= 1.0, "smooth_tau_s out of range")
     led = cfg["led_default_color_index"]
     check(isinstance(led, int) and not isinstance(led, bool)
           and 0 <= led < LED_PALETTE_COUNT,
@@ -130,11 +143,12 @@ def main():
     if len(sys.argv) != 3:
         print(f"Usage: python3 {sys.argv[0]} <config.json> <out.uf2>")
         sys.exit(1)
-    with open(sys.argv[1]) as f:
-        cfg = json.load(f)
     try:
+        with open(sys.argv[1]) as f:
+            cfg = json.load(f)
+        check(isinstance(cfg, dict), "top level must be a JSON object")
         blob = build_blob(cfg)
-    except (ConfigError, KeyError) as e:
+    except (ConfigError, KeyError, ValueError) as e:
         sys.exit(f"{sys.argv[1]}: invalid config: {e}")
     uf2 = to_uf2(blob, TUNING_FLASH_ADDR)
     with open(sys.argv[2], "wb") as f:

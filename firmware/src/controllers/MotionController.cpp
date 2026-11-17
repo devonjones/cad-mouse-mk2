@@ -85,10 +85,6 @@ float MotionController::lowpass(float prev, float x, float dt, float tau) {
   return prev + a * (x - prev);
 }
 
-float MotionController::axisBaseDead(int i) {
-  return tuning().dead_axis[i];
-}
-
 void MotionController::compute(const float raw[9], const float* baseline, float dt,
                                float out[6]) {
   // Baseline subtraction converts magnetic deltas around the calibrated rest pose.
@@ -159,7 +155,7 @@ void MotionController::compute(const float raw[9], const float* baseline, float 
   const TuningConfig& t = tuning();
   for (int i = 0; i < 6; i++) {
     const float shaped =
-        shapeAxis(yc[i], axisBaseDead(i), t.curve_expo[i]);
+        shapeAxis(yc[i], t.dead_axis[i], t.curve_expo[i]);
 
     filt_[i] = lowpass(filt_[i], shaped, dt, t.smooth_tau_s);
 

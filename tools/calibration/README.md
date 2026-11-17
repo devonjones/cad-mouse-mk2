@@ -3,8 +3,7 @@
 Per-unit motion calibration workflow for the SpaceMouse-emulation firmware.
 Fitted values live in `configs/<unit>.json` and deploy as a config UF2
 (see `tools/config/README.md`) — the compiled firmware is unit-agnostic.
-The fit scripts print C-style arrays; their values map 1:1 onto the JSON
-keys (decouple, trim_pos/trim_neg, cross_pos/cross_neg).
+The fit scripts print JSON fragments to paste into that file.
 
 ## Workflow
 

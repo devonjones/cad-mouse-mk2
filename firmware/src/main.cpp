@@ -5,8 +5,6 @@
 #include "StateMachine.h"
 #include "TuningConfig.h"
 
-TuningStore tuningStore;
-
 InputController inputController;
 LEDController ledController;
 SensorController sensorController;
@@ -15,8 +13,7 @@ HIDController hidController;
 TelemetryController telemetryController;
 
 void setup() {
-  // Load the per-unit config block before anything consumes tuning().
-  tuningStore.begin();
+  loadTuning();
 
   // Initialize USB HID first
   hidController.begin();
@@ -24,9 +21,9 @@ void setup() {
   if (Config::ENABLE_TELEMETRY) {
     Serial.begin(115200);
     delay(200);
-    // Boot diagnostics for the config block.
-    Serial.print(">tuning_from_flash:");
-    Serial.println(tuningStore.fromFlash() ? 1 : 0);
+    // 0 Loaded, 1 Absent, 2 BadVersion, 3 BadCrc, 4 BadValues.
+    Serial.print(">tuning_status:");
+    Serial.println(static_cast<int>(tuningStatus()));
     const uint32_t* raw = reinterpret_cast<const uint32_t*>(TUNING_FLASH_ADDR);
     Serial.print(">flash_magic:");
     Serial.println(raw[0], HEX);
