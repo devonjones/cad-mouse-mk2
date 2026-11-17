@@ -28,19 +28,11 @@ const int PIN_MAG3_LS = D8;
 // Samples for calibration offset
 const int ZERO_SAMPLES = 200;
 
-// Per-unit calibration (DECOUPLE, TRIM, DEAD_AXIS, CURVE_EXPO, CROSS,
-// LED default). Each physical unit has its own fitted header — select
-// with -DUNIT=<n> (platformio.ini defines one env per unit).
-#ifndef UNIT
-#define UNIT 1
-#endif
-#if UNIT == 1
-#include "units/unit1.h"
-#elif UNIT == 2
-#include "units/unit2.h"
-#else
-#error "Unknown UNIT - add firmware/include/units/unit<n>.h"
-#endif
+// Compiled-default tuning, used only when no valid per-unit config block
+// is present in flash. Real units get their calibration deployed as a
+// config UF2 from configs/<unit>.json (see tools/config/README.md); the
+// binary itself is unit-agnostic.
+#include "units/default.h"
 
 // Smoothing
 const float SMOOTH_TAU_S = 0.09f;

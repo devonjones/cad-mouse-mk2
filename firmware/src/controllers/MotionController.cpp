@@ -4,6 +4,7 @@
 #include <math.h>
 
 #include "Config.h"
+#include "TuningConfig.h"
 
 namespace {
 enum RawIndex {
@@ -32,14 +33,14 @@ enum AxisIndex {
 void decouple(const float sensed[6], float y[6]) {
   float v[6];
   for (int i = 0; i < 6; i++) {
-    v[i] = Config::SIGN_AXIS[i] * sensed[i];
+    v[i] = tuning().sign_axis[i] * sensed[i];
   }
   for (int i = 0; i < 6; i++) {
     float acc = 0.0f;
     for (int j = 0; j < 6; j++) {
-      acc += Config::DECOUPLE[i][j] * v[j];
+      acc += tuning().decouple[i][j] * v[j];
     }
-    y[i] = acc * (acc >= 0.0f ? Config::TRIM_POS[i] : Config::TRIM_NEG[i]);
+    y[i] = acc * (acc >= 0.0f ? tuning().trim_pos[i] : tuning().trim_neg[i]);
   }
 }
 
@@ -50,8 +51,8 @@ void applyCrossFix(const float y[6], float yc[6]) {
     float acc = y[i];
     for (int j = 0; j < 6; j++) {
       if (j == i) continue;
-      const float c = (y[j] >= 0.0f) ? Config::CROSS_POS[j][i]
-                                     : Config::CROSS_NEG[j][i];
+      const float c = (y[j] >= 0.0f) ? tuning().cross_pos[j][i]
+                                     : tuning().cross_neg[j][i];
       acc -= c * y[j];
     }
     yc[i] = acc;
@@ -83,7 +84,7 @@ float MotionController::lowpass(float prev, float x, float dt, float tau) {
 }
 
 float MotionController::axisBaseDead(int i) {
-  return Config::DEAD_AXIS[i];
+  return tuning().dead_axis[i];
 }
 
 void MotionController::compute(const float raw[9], const float* baseline, float dt,
@@ -155,9 +156,9 @@ void MotionController::compute(const float raw[9], const float* baseline, float 
   motionActive_ = false;
   for (int i = 0; i < 6; i++) {
     const float shaped =
-        shapeAxis(yc[i], axisBaseDead(i), Config::CURVE_EXPO[i]);
+        shapeAxis(yc[i], axisBaseDead(i), tuning().curve_expo[i]);
 
-    filt_[i] = lowpass(filt_[i], shaped, dt, Config::SMOOTH_TAU_S);
+    filt_[i] = lowpass(filt_[i], shaped, dt, tuning().smooth_tau_s);
 
     const float limited =
         clampf(filt_[i], -Config::AXIS_LIMIT, Config::AXIS_LIMIT);

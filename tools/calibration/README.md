@@ -1,8 +1,10 @@
 # Calibration tooling
 
 Per-unit motion calibration workflow for the SpaceMouse-emulation firmware.
-The values in `firmware/include/Config.h` (DECOUPLE, TRIM_POS/NEG, DEAD_AXIS)
-were fitted for one specific unit — a different build should re-run this.
+Fitted values live in `configs/<unit>.json` and deploy as a config UF2
+(see `tools/config/README.md`) — the compiled firmware is unit-agnostic.
+The fit scripts print C-style arrays; their values map 1:1 onto the JSON
+keys (decouple, trim_pos/trim_neg, cross_pos/cross_neg).
 
 ## Workflow
 
@@ -19,8 +21,8 @@ were fitted for one specific unit — a different build should re-run this.
    (per-axis extremes, 1s-bin timeline, rest-phase noise floors).
 4. Fit the decoupling matrix + trims: edit the phase time windows in
    `fit_matrix.py` to match your capture's timeline, then
-   `python3 fit_matrix.py capture.txt` and paste the emitted arrays into
-   `Config.h`.
+   `python3 fit_matrix.py capture.txt` and copy the emitted values into
+   the unit's `configs/<unit>.json`.
 5. After flashing the fitted firmware, capture the same sequence again and
    use `fit_crossfix.py` (adjust its trim constants and phase windows first)
    to fit the residual direction-dependent CROSS_POS/CROSS_NEG corrections.

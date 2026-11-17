@@ -1,9 +1,11 @@
 #pragma once
 
-// Unit 2 — black case. NOT YET CALIBRATED: these are bootstrap values
-// for the initial guided capture (tools/calibration/README.md). The
-// diagonal matches fit_matrix.py's GAINS_OLD, so a capture taken on
-// this config feeds the fit directly. Replace with fitted values.
+// Compiled-default tuning: safe bootstrap values used only when no valid
+// per-unit config block is present in flash (see TuningConfig.h and
+// tools/config/README.md — real units get their calibration deployed as a
+// config UF2, not compiled in). The diagonal matches fit_matrix.py's
+// GAINS_OLD, so a calibration capture taken on these defaults feeds the
+// fit directly.
 //
 // Axis order: TX, TY, TZ, RX, RY, RZ. Output units: AXIS_LIMIT (350) =
 // full deflection. Pipeline semantics live on decouple()/applyCrossFix()
@@ -22,7 +24,7 @@ inline constexpr float TRIM_NEG[6] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
 
 inline constexpr float DEAD_AXIS[6] = {25.0, 25.0, 40.0, 12.0, 16.0, 12.0};
 
-// Linear until this unit's response is measured.
+// Linear until the unit's response is measured.
 inline constexpr float CURVE_EXPO[6] = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
 
 inline constexpr float CROSS_POS[6][6] = {
@@ -42,5 +44,5 @@ inline constexpr float CROSS_NEG[6][6] = {
     {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
 };
 
-// Default idle LED color (index into LED_IDLE_PALETTE): green.
-inline constexpr int LED_DEFAULT_COLOR_INDEX = 1;
+// Default idle LED color (index into LED_IDLE_PALETTE): purple.
+inline constexpr int LED_DEFAULT_COLOR_INDEX = 0;
