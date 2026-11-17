@@ -16,6 +16,9 @@ class SensorController {
   bool calibrationDone() const;
 
   const float* baseline() const;
+  // How many sensors accepted fast mode (3 expected); debug telemetry
+  // reports it because a boot-time print is never seen.
+  int fastModeSensors() const { return fastModeSensors_; }
 
  private:
   static void powerOff(int pin);
@@ -31,4 +34,5 @@ class SensorController {
   unsigned long lastCalibrationSampleMs_ = 0;
   float calibrationSum_[9] = {};
   float baseline_[9] = {};
+  int fastModeSensors_ = 0;
 };

@@ -1,6 +1,7 @@
 #include "controllers/TelemetryController.h"
 #include <Arduino.h>
 #include "Config.h"
+#include "Controllers.h"
 #include "TuningConfig.h"
 
 namespace {
@@ -26,6 +27,8 @@ void TelemetryController::publish(const float motion[6], int buttonBits,
   // before the host opens the port, so a one-time boot print is never seen.
   Serial.print(">tuning_status:");
   Serial.println(static_cast<int>(tuningStatus()));
+  Serial.print(">sensor_fast_mode:");
+  Serial.println(sensorController.fastModeSensors());
   Serial.print(">X:");
   Serial.println(motion[0]);
   Serial.print(">Y:");
