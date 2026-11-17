@@ -64,8 +64,8 @@ def f32(key, x):
         raise ConfigError(f"{key}: {x!r} does not fit in a float32")
 
 
-def vec(v, key, n=6):
-    check(isinstance(v, list) and len(v) == n, f"{key}: expected {n} values")
+def vec(v, key):
+    check(isinstance(v, list) and len(v) == 6, f"{key}: expected 6 values")
     return [f32(key, x) for x in v]
 
 

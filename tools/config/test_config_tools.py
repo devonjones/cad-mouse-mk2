@@ -204,41 +204,65 @@ class FirmwareValidation(unittest.TestCase):
             with self.subTest(name):
                 self.assertEqual(self.status(blob), want)
 
-    def test_each_value_check_rejects(self):
-        # One CRC-valid block per valuesSane() check, each breaking only
-        # that check; boundary values pin the comparison operators and the
-        # last-axis/last-cell indices pin the loop bounds.
-        nan = float("nan")
-        # Unpacked LAYOUT indices: sign 3-8, decouple 9-44, trim_pos 45-50,
-        # trim_neg 51-56, dead 57-62, expo 63-68, cross_pos 69-104,
-        # cross_neg 105-140, smooth_tau_s 141, led 142.
-        cases = {
-            "sign 0": (8, 0),
-            "decouple over bound": (9, 1e30),
-            "decouple under -bound": (44, -1001.0),
-            "decouple nan": (20, nan),
-            "cross_pos over bound": (104, 1001.0),
-            "cross_pos nan": (70, nan),
-            "cross_neg under -bound": (140, -1001.0),
-            "trim_pos zero": (50, 0.0),
-            "trim_pos 10": (45, 10.0),
-            "trim_neg zero": (56, 0.0),
-            "trim_neg 10": (51, 10.0),
-            "dead negative": (62, -1.0),
-            "dead at AXIS_LIMIT": (57, 350.0),
-            "expo below 0.5": (68, 0.49),
-            "expo above 5": (63, 5.01),
-            "tau negative": (141, -0.01),
-            "tau above 1": (141, 1.01),
-            "led out of palette": (142, mk.LED_PALETTE_COUNT),
-        }
-        good = mk.build_blob(load("unit1"))[:552]
-        for name, (idx, value) in cases.items():
-            with self.subTest(name):
-                f = list(struct.unpack(LAYOUT, good))
-                f[idx] = value
-                blob = self.resign(struct.pack(LAYOUT, *f))
+    # (field, flat index, value). Rejects break exactly one check; accepts
+    # sit on the inclusive side of each bound. Last-axis/last-cell indices
+    # pin the loop bounds; each case runs through BOTH the packer and the
+    # host-compiled firmware, so their ranges can't drift apart.
+    REJECT = [
+        ("sign_axis", 5, 0),
+        ("decouple", 0, 1e30), ("decouple", 35, -1001.0),
+        ("decouple", 11, float("nan")),
+        ("cross_pos", 35, 1001.0), ("cross_pos", 1, float("nan")),
+        ("cross_neg", 35, -1001.0),
+        ("trim_pos", 5, 0.0), ("trim_pos", 0, 10.0),
+        ("trim_neg", 5, 0.0), ("trim_neg", 0, 10.0),
+        ("dead_axis", 5, -1.0), ("dead_axis", 0, 350.0),
+        ("curve_expo", 5, 0.49), ("curve_expo", 0, 5.01),
+        ("smooth_tau_s", 0, -0.01), ("smooth_tau_s", 0, 1.01),
+        ("led_default_color_index", 0, mk.LED_PALETTE_COUNT),
+    ]
+    ACCEPT = [
+        ("decouple", 35, -1000.0), ("cross_pos", 35, 1000.0),
+        ("cross_neg", 0, -1000.0),
+        ("trim_pos", 5, 9.99), ("trim_neg", 5, 0.01),
+        ("dead_axis", 5, 0.0), ("dead_axis", 0, 349.9),
+        ("curve_expo", 5, 0.5), ("curve_expo", 0, 5.0),
+        ("smooth_tau_s", 0, 0.0), ("smooth_tau_s", 0, 1.0),
+        ("led_default_color_index", 0, mk.LED_PALETTE_COUNT - 1),
+    ]
+    # Start of each field in struct.unpack(LAYOUT, ...) output.
+    BASE = {"sign_axis": 3, "decouple": 9, "trim_pos": 45, "trim_neg": 51,
+            "dead_axis": 57, "curve_expo": 63, "cross_pos": 69,
+            "cross_neg": 105, "smooth_tau_s": 141,
+            "led_default_color_index": 142}
+
+    def mutated(self, field, idx, value):
+        cfg = copy.deepcopy(load("unit1"))
+        v = cfg[field]
+        if not isinstance(v, list):
+            cfg[field] = value
+        elif isinstance(v[0], list):
+            v[idx // 6][idx % 6] = value
+        else:
+            v[idx] = value
+        f = list(struct.unpack(LAYOUT, mk.build_blob(load("unit1"))[:552]))
+        f[self.BASE[field] + idx] = value
+        return cfg, self.resign(struct.pack(LAYOUT, *f))
+
+    def test_packer_and_firmware_reject_the_same_values(self):
+        for field, idx, value in self.REJECT:
+            with self.subTest(field=field, idx=idx, value=value):
+                cfg, blob = self.mutated(field, idx, value)
+                with self.assertRaises(mk.ConfigError):
+                    mk.build_blob(cfg)
                 self.assertEqual(self.status(blob), self.BAD_VALUES)
+
+    def test_packer_and_firmware_accept_bound_values(self):
+        for field, idx, value in self.ACCEPT:
+            with self.subTest(field=field, idx=idx, value=value):
+                cfg, _ = self.mutated(field, idx, value)
+                self.assertEqual(self.status(mk.build_blob(cfg)),
+                                 self.LOADED)
 
 
 class MergeUf2(unittest.TestCase):
