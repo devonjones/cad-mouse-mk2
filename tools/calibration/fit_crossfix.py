@@ -22,13 +22,14 @@ AXES = ["X", "Y", "Z", "Rx", "Ry", "Rz"]
 # Rescale to the trims the firmware will actually SHIP with, so the
 # fitted coefficients apply to what the firmware computes at runtime.
 # NEW_* must equal the unit config's trim_pos/trim_neg at flash time —
-# if trims are hand-adjusted after fitting, the affected CROSS source
-# rows must be rescaled by old_trim/new_trim (see configs/unit1.json
-# _notes on its RX and RY- rows).
+# if trims are hand-adjusted after fitting, rescale each CROSS entry by
+# source old/new AND target new/old (the target trim for the direction of
+# the bleed it cancels): corrections subtract c*y_source from a post-trim
+# target. See configs/unit1.json _notes.
 OLD_POS = np.array([1.1403, 1.1873, 1.3074, 0.9970, 0.8971, 0.8984])
 OLD_NEG = np.array([1.5141, 1.4741, 1.8186, 1.1210, 1.6126, 1.1909])
-NEW_POS = np.array([0.984, 1.187, 1.023, 0.740, 0.897, 0.992])
-NEW_NEG = np.array([1.453, 1.384, 2.000, 0.950, 2.175, 1.336])
+NEW_POS = np.array([1.538, 2.989, 1.207, 0.692, 0.839, 0.928])
+NEW_NEG = np.array([3.445, 2.836, 4.202, 0.888, 2.034, 1.249])
 
 def parse(path):
     samples, t, cur = [], 0.0, {}
