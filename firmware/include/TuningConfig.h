@@ -50,11 +50,12 @@ const uint32_t TUNING_FLASH_ADDR = 0x101FE000;
 const float TUNING_MAX_COEFF = 1000.0f;
 
 enum class TuningStatus : uint8_t {
-  Loaded,      // valid block in flash is active
-  Absent,      // no block (magic mismatch, e.g. erased flash)
-  BadVersion,  // block from a different TUNING_VERSION
-  BadCrc,
-  BadValues,   // CRC ok but valuesSane() rejected it
+  // Explicit values: the debug build prints them (>tuning_status).
+  Loaded = 0,      // valid block in flash is active
+  Absent = 1,      // no block (magic mismatch, e.g. erased flash)
+  BadVersion = 2,  // block from a different TUNING_VERSION
+  BadCrc = 3,
+  BadValues = 4,   // CRC ok but valuesSane() rejected it
 };
 
 // Loads and validates the flash block; on failure the compiled defaults

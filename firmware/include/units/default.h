@@ -3,10 +3,8 @@
 // Fallback tuning (see TuningConfig.h). The diagonal matches
 // fit_matrix.py's GAINS_OLD, so a calibration capture taken on these
 // defaults feeds the fit directly.
-//
-// Axis order: TX, TY, TZ, RX, RY, RZ. Output units: AXIS_LIMIT (350) =
-// full deflection. Pipeline semantics live on decouple()/applyCrossFix()
-// in MotionController.cpp.
+// Pipeline semantics live on decouple()/applyCrossFix() in
+// MotionController.cpp.
 inline constexpr int SIGN_AXIS[6] = {+1, -1, +1, -1, -1, -1};
 inline constexpr float DECOUPLE[6][6] = {
     {48.0, 0.0, 0.0, 0.0, 0.0, 0.0},

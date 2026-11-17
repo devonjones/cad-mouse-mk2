@@ -21,7 +21,7 @@ void setup() {
   if (Config::ENABLE_TELEMETRY) {
     Serial.begin(115200);
     delay(200);
-    // 0 Loaded, 1 Absent, 2 BadVersion, 3 BadCrc, 4 BadValues.
+    // TuningStatus value; see TuningConfig.h.
     Serial.print(">tuning_status:");
     Serial.println(static_cast<int>(tuningStatus()));
     const uint32_t* raw = reinterpret_cast<const uint32_t*>(TUNING_FLASH_ADDR);

@@ -46,7 +46,7 @@ constexpr bool deadZonesValid(const float (&dead)[6], float limit) {
   return true;
 }
 static_assert(deadZonesValid(DEAD_AXIS, AXIS_LIMIT),
-              "unit header's DEAD_AXIS entries must be within [0, AXIS_LIMIT)");
+              "units/default.h DEAD_AXIS entries must be within [0, AXIS_LIMIT)");
 
 // A real SpaceMouse streams reports while deflected; refresh unchanged
 // non-zero axis reports at least this often so drivers don't see the

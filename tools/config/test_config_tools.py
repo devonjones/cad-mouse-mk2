@@ -96,6 +96,8 @@ class BuildBlob(unittest.TestCase):
                 0, 9.9999999999),
             "trim underflows to 0": lambda c: c["trim_neg"].__setitem__(
                 0, 1e-50),
+            "int too large for float": lambda c: c["trim_pos"].__setitem__(
+                0, 10**400),
         }
         for name, mutate in cases.items():
             with self.subTest(name):
@@ -160,23 +162,51 @@ class FirmwareValidation(unittest.TestCase):
         struct.pack_into("<H", bad_version, 4, mk.TUNING_VERSION + 1)
         bad_crc = bytearray(good)
         bad_crc[100] ^= 1
-        f = list(struct.unpack(LAYOUT, good[:552]))
-        f[9] = 1e30  # decouple[0][0], beyond TUNING_MAX_COEFF
-        huge = struct.pack(LAYOUT, *f)
-        f = list(struct.unpack(LAYOUT, good[:552]))
-        f[-1] = mk.LED_PALETTE_COUNT
-        led = struct.pack(LAYOUT, *f)
         cases = {
             "erased flash": (erased, self.ABSENT),
             "other version": (self.resign(bytes(bad_version)),
                               self.BAD_VERSION),
             "bit flip": (bytes(bad_crc), self.BAD_CRC),
-            "huge coefficient": (self.resign(huge), self.BAD_VALUES),
-            "led out of palette": (self.resign(led), self.BAD_VALUES),
         }
         for name, (blob, want) in cases.items():
             with self.subTest(name):
                 self.assertEqual(self.status(blob), want)
+
+    def test_each_value_check_rejects(self):
+        # One CRC-valid block per valuesSane() check, each breaking only
+        # that check; boundary values pin the comparison operators and the
+        # last-axis/last-cell indices pin the loop bounds.
+        nan = float("nan")
+        # Unpacked LAYOUT indices: sign 3-8, decouple 9-44, trim_pos 45-50,
+        # trim_neg 51-56, dead 57-62, expo 63-68, cross_pos 69-104,
+        # cross_neg 105-140, smooth_tau_s 141, led 142.
+        cases = {
+            "sign 0": (8, 0),
+            "decouple over bound": (9, 1e30),
+            "decouple under -bound": (44, -1001.0),
+            "decouple nan": (20, nan),
+            "cross_pos over bound": (104, 1001.0),
+            "cross_pos nan": (70, nan),
+            "cross_neg under -bound": (140, -1001.0),
+            "trim_pos zero": (50, 0.0),
+            "trim_pos 10": (45, 10.0),
+            "trim_neg zero": (56, 0.0),
+            "trim_neg 10": (51, 10.0),
+            "dead negative": (62, -1.0),
+            "dead at AXIS_LIMIT": (57, 350.0),
+            "expo below 0.5": (68, 0.49),
+            "expo above 5": (63, 5.01),
+            "tau negative": (141, -0.01),
+            "tau above 1": (141, 1.01),
+            "led out of palette": (142, mk.LED_PALETTE_COUNT),
+        }
+        good = mk.build_blob(load("unit1"))[:552]
+        for name, (idx, value) in cases.items():
+            with self.subTest(name):
+                f = list(struct.unpack(LAYOUT, good))
+                f[idx] = value
+                blob = self.resign(struct.pack(LAYOUT, *f))
+                self.assertEqual(self.status(blob), self.BAD_VALUES)
 
 
 class MergeUf2(unittest.TestCase):

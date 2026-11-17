@@ -107,7 +107,6 @@ print("\n== post-matrix rest noise floor (trimmed) ==")
 for a, f in zip(AXES, floor_trimmed):
     print(f"{a:>3}: {f:6.1f}")
 
-# Emit configs/<unit>.json fragments
 def jarr(v):
     return "[" + ", ".join(f"{x:.4f}" for x in v) + "]"
 

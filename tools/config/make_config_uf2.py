@@ -47,8 +47,12 @@ def check(cond, msg):
 
 
 def finite(x):
-    return isinstance(x, (int, float)) and not isinstance(x, bool) \
-        and math.isfinite(x)
+    if isinstance(x, bool) or not isinstance(x, (int, float)):
+        return False
+    try:
+        return math.isfinite(x)
+    except OverflowError:  # int too large for a float
+        return False
 
 
 def f32(key, x):
@@ -60,8 +64,7 @@ def f32(key, x):
         raise ConfigError(f"{key}: {x!r} does not fit in a float32")
 
 
-def vec(cfg, key, n=6):
-    v = cfg[key]
+def vec(v, key, n=6):
     check(isinstance(v, list) and len(v) == n, f"{key}: expected {n} values")
     return [f32(key, x) for x in v]
 
@@ -69,7 +72,7 @@ def vec(cfg, key, n=6):
 def flat(cfg, key):
     m = cfg[key]
     check(isinstance(m, list) and len(m) == 6, f"{key}: expected 6 rows")
-    return [x for i in range(6) for x in vec({key: m[i]}, key)]
+    return [x for row in m for x in vec(row, key)]
 
 
 def build_blob(cfg):
@@ -84,12 +87,12 @@ def build_blob(cfg):
     for key in ("decouple", "cross_pos", "cross_neg"):
         check(all(abs(x) <= MAX_COEFF for x in flat(cfg, key)),
               f"{key}: |value| exceeds {MAX_COEFF}")
-    dead = vec(cfg, "dead_axis")
+    dead = vec(cfg["dead_axis"], "dead_axis")
     check(all(0.0 <= d < AXIS_LIMIT for d in dead), "dead zone out of range")
-    expo = vec(cfg, "curve_expo")
+    expo = vec(cfg["curve_expo"], "curve_expo")
     check(all(0.5 <= e <= 5.0 for e in expo), "curve expo out of range")
     for key in ("trim_pos", "trim_neg"):
-        check(all(0.0 < t < 10.0 for t in vec(cfg, key)), f"{key} out of range")
+        check(all(0.0 < t < 10.0 for t in vec(cfg[key], key)), f"{key} out of range")
     tau = f32("smooth_tau_s", cfg["smooth_tau_s"])
     check(0.0 <= tau <= 1.0, "smooth_tau_s out of range")
     led = cfg["led_default_color_index"]
@@ -104,8 +107,8 @@ def build_blob(cfg):
         0,
         *signs,
         *flat(cfg, "decouple"),
-        *vec(cfg, "trim_pos"),
-        *vec(cfg, "trim_neg"),
+        *vec(cfg["trim_pos"], "trim_pos"),
+        *vec(cfg["trim_neg"], "trim_neg"),
         *dead,
         *expo,
         *flat(cfg, "cross_pos"),

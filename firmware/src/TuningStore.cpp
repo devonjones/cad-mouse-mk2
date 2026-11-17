@@ -44,7 +44,8 @@ TuningConfig makeDefaults() {
 TuningConfig active_ = makeDefaults();
 TuningStatus status_ = TuningStatus::Absent;
 
-bool coeffOk(float x) { return isfinite(x) && fabsf(x) <= TUNING_MAX_COEFF; }
+// Also rejects NaN (every comparison with NaN is false) and inf.
+bool coeffOk(float x) { return fabsf(x) <= TUNING_MAX_COEFF; }
 
 bool valuesSane(const TuningConfig& c) {
   for (int i = 0; i < 6; i++) {

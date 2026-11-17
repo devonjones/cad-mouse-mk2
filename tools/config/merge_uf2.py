@@ -43,7 +43,6 @@ def main():
 
     total = len(blocks)
     for i, b in enumerate(blocks):
-        # Rewrite blockNo (offset 20) and numBlocks (offset 24).
         struct.pack_into("<I", b, 20, i)
         struct.pack_into("<I", b, 24, total)
 
