@@ -1,6 +1,6 @@
 {
   "_unit": "unit1 — purple case",
-  "_provenance": "Fitted 2026-07-09 from guided captures (tools/calibration/), then feel-tuned on hardware: RX trims ~0.85x (pitch oversensitive), RY- trim 1.5x (roll right slow) with compensated cross row, RX->TY cross kept below fitted strength (forward pushes carry incidental pitch), curves rebalanced translation-flat/rotation-steep for coordinated orbiting.",
+  "_provenance": "Fitted 2026-07-09 from guided captures (tools/calibration/), then feel-tuned on hardware: RX trims ~0.85x (pitch oversensitive), RY- trim 1.5x (roll right slow) with compensated cross row, RX->TY cross kept below fitted strength (forward pushes carry incidental pitch), curves rebalanced translation-flat/rotation-steep for coordinated orbiting. 2026-11-17: translation trims/dead zones and all curves retuned to match a real SpaceNavigator (see the dated _notes).",
   "_notes": [
     "Trims were hand-adjusted after fitting: RX (pitch) ~0.85x, RY- (roll right) 1.5x. When a source axis's trim changes after fitting, its CROSS rows must be rescaled by old_trim/new_trim so the correction stays constant in absolute terms.",
     "RX source rows rescaled for the RX trim change (0.870->0.740 pos, 1.121->0.950 neg), EXCEPT RX->TY, which deliberately keeps the pre-rescale values: forward pushes carry incidental pitch and the full-strength correction ate enough forward pan to feel slow.",
