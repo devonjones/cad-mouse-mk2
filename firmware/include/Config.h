@@ -38,7 +38,7 @@ inline constexpr float AXIS_LIMIT = 350.0f;
 
 // A dead zone at or beyond full scale would zero the axis and produce
 // NaN in the sensitivity curve's normalization. Enforce at compile time
-// so a typo in a unit header can't ship.
+// so a typo in units/default.h can't ship.
 constexpr bool deadZonesValid(const float (&dead)[6], float limit) {
   for (int i = 0; i < 6; i++) {
     if (dead[i] < 0.0f || dead[i] >= limit) return false;

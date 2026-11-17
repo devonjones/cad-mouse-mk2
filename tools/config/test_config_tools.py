@@ -68,11 +68,22 @@ class BuildBlob(unittest.TestCase):
             self.assertEqual(len(blob), 556)
             body, (crc,) = blob[:552], struct.unpack("<I", blob[552:])
             self.assertEqual(crc, zlib.crc32(body))
-            f = struct.unpack(LAYOUT, body)
-            self.assertEqual((f[0], f[1]), (mk.TUNING_MAGIC, mk.TUNING_VERSION))
-            self.assertEqual(list(f[3:9]), cfg["sign_axis"])
-            self.assertAlmostEqual(f[9], cfg["decouple"][0][0], places=4)
-            self.assertEqual(f[-1], cfg["led_default_color_index"])
+            f = iter(struct.unpack(LAYOUT, body))
+
+            def take(n):
+                return [next(f) for _ in range(n)]
+            self.assertEqual(take(3), [mk.TUNING_MAGIC, mk.TUNING_VERSION, 0])
+            self.assertEqual(take(6), cfg["sign_axis"])
+            for key, n in (("decouple", 36), ("trim_pos", 6),
+                           ("trim_neg", 6), ("dead_axis", 6),
+                           ("curve_expo", 6), ("cross_pos", 36),
+                           ("cross_neg", 36), ("smooth_tau_s", 1)):
+                v = cfg[key]
+                want = ([x for row in v for x in row] if n == 36
+                        else v if n == 6 else [v])
+                for got, w in zip(take(n), want, strict=True):
+                    self.assertAlmostEqual(got, w, places=4, msg=key)
+            self.assertEqual(take(1), [cfg["led_default_color_index"]])
 
     def test_rejects_bad_configs(self):
         nan = float("nan")
@@ -148,6 +159,27 @@ class FirmwareValidation(unittest.TestCase):
     @staticmethod
     def resign(body):
         return body + struct.pack("<I", zlib.crc32(body))
+
+    def test_field_offsets_match_packer_order(self):
+        # Packer field order, with each field's struct format; pad bytes
+        # (2x, 3x) precede the next field.
+        order = [("magic", "I"), ("version", "H"), ("reserved", "H"),
+                 ("sign_axis", "6b2x"), ("decouple", "36f"),
+                 ("trim_pos", "6f"), ("trim_neg", "6f"),
+                 ("dead_axis", "6f"), ("curve_expo", "6f"),
+                 ("cross_pos", "36f"), ("cross_neg", "36f"),
+                 ("smooth_tau_s", "f"), ("led_default_color_index", "B3x"),
+                 ("crc32", "I")]
+        self.assertEqual("<" + "".join(f for _, f in order[:-1]), LAYOUT)
+        expected, off = {}, 0
+        for name, fmt in order:
+            expected[name] = off
+            off += struct.calcsize("<" + fmt)
+        r = subprocess.run([str(self.exe), "--offsets"], capture_output=True,
+                           text=True, check=True)
+        actual = {k: int(v) for k, v in
+                  (line.split() for line in r.stdout.splitlines())}
+        self.assertEqual(actual, expected)
 
     def test_packed_unit_configs_load(self):
         for unit in ("unit1", "unit2"):
