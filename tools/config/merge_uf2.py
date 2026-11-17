@@ -66,13 +66,13 @@ def main():
             (m_end,) = struct.unpack_from("<I", b, BLOCK - 4)
             if (m0, m1, m_end) != (UF2_MAGIC0, UF2_MAGIC1, UF2_MAGIC_END):
                 sys.exit(f"{p}: block {i // BLOCK} has bad UF2 magic")
-            # Overlapping writes would make the result depend on block
-            # order; refuse rather than guess which input wins.
             addr, size = struct.unpack_from("<II", b, 12)
             if size != PAGE or addr % PAGE:
                 sys.exit(f"{p}: block {i // BLOCK} at 0x{addr:08X} has a "
                          f"{size}-byte payload; expected 256-byte, "
                          f"page-aligned payloads")
+            # Overlapping writes would make the result depend on block
+            # order; refuse rather than guess which input wins.
             if addr in targets:
                 sys.exit(f"{p}: address 0x{addr:08X} also written by "
                          f"{targets[addr]}")
