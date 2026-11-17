@@ -28,8 +28,9 @@ separate flash regions, so either can be reflashed alone.
   the packer.
 - The packer applies the firmware's boot-time checks to the float32-rounded
   values, so a block it builds is not rejected at boot. A debug-serial
-  build reports the block's status in every telemetry frame: `>tuning_status:` is 0 loaded,
-  1 absent, 2 wrong version, 3 bad CRC, 4 bad values.
+  build reports the block's status in each telemetry frame:
+  `>tuning_status:` is 0 loaded, 1 absent, 2 wrong version, 3 bad CRC,
+  4 bad values.
 - `python3 -m unittest discover tools/config` runs the packer/merge tests,
   which also check the packer's constants against the firmware headers.
 - If the `TuningConfig` layout changes, bump `TUNING_VERSION` in both the
