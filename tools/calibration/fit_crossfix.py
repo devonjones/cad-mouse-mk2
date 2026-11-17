@@ -15,15 +15,16 @@ import numpy as np
 
 AXES = ["X", "Y", "Z", "Rx", "Ry", "Rz"]
 
-# WARNING: all four trim arrays below are UNIT 1 values. Update them to
+# WARNING: all four trim arrays below are UNIT 1 values (configs/unit1.json). Update them to
 # the target unit's capture-time and ship-time trims before fitting any
 # other unit, or the corrections will be silently wrong.
 # The capture's telemetry is gained() = post-matrix, post-OLD-trim values.
 # Rescale to the trims the firmware will actually SHIP with, so the
 # fitted coefficients apply to what the firmware computes at runtime.
-# NEW_* must equal the unit header's TRIM_POS/TRIM_NEG at flash time —
+# NEW_* must equal the unit config's trim_pos/trim_neg at flash time —
 # if trims are hand-adjusted after fitting, the affected CROSS source
-# rows must be rescaled by old_trim/new_trim (see unit1.h's RX rows).
+# rows must be rescaled by old_trim/new_trim (see configs/unit1.json
+# _notes on its RX and RY- rows).
 OLD_POS = np.array([1.1403, 1.1873, 1.3074, 0.9970, 0.8971, 0.8984])
 OLD_NEG = np.array([1.5141, 1.4741, 1.8186, 1.1210, 1.6126, 1.1909])
 NEW_POS = np.array([0.984, 1.187, 1.023, 0.740, 0.897, 0.992])

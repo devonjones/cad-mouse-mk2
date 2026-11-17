@@ -76,7 +76,7 @@ inline constexpr int LED_IDLE_PALETTE_COUNT =
     sizeof(LED_IDLE_PALETTE) / sizeof(LED_IDLE_PALETTE[0]);
 static_assert(LED_DEFAULT_COLOR_INDEX >= 0 &&
                   LED_DEFAULT_COLOR_INDEX < LED_IDLE_PALETTE_COUNT,
-              "unit header's LED_DEFAULT_COLOR_INDEX is outside the palette");
+              "units/default.h LED_DEFAULT_COLOR_INDEX is outside the palette");
 const unsigned long LED_CALIBRATING_COLOR = 0x0000FF;
 
 // FSM timing

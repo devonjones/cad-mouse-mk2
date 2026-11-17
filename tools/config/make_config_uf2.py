@@ -9,6 +9,7 @@ firmware UF2 or merged into one file with merge_uf2.py.
 Usage: python3 make_config_uf2.py <config.json> <out.uf2>
 """
 import json
+import math
 import struct
 import sys
 import zlib
@@ -25,28 +26,63 @@ UF2_FLAG_FAMILY_ID = 0x00002000
 RP2040_FAMILY_ID = 0xE48BFF56
 
 
-def flat(mat):
-    assert len(mat) == 6 and all(len(row) == 6 for row in mat)
-    return [v for row in mat for v in row]
+# Must match LED_IDLE_PALETTE_COUNT in firmware/include/Config.h; the
+# firmware rejects the whole block (falls back to defaults) if it's out of
+# range, so catch it here instead.
+LED_PALETTE_COUNT = 7
+
+FIELDS = ("sign_axis", "decouple", "trim_pos", "trim_neg", "dead_axis",
+          "curve_expo", "cross_pos", "cross_neg", "smooth_tau_s",
+          "led_default_color_index")
 
 
-def vec(v, n=6):
-    assert len(v) == n
+class ConfigError(Exception):
+    pass
+
+
+def check(cond, msg):
+    # Explicit checks, not assert: these must still run under python -O.
+    if not cond:
+        raise ConfigError(msg)
+
+
+def finite(x):
+    return isinstance(x, (int, float)) and not isinstance(x, bool) \
+        and math.isfinite(x)
+
+
+def vec(cfg, key, n=6):
+    v = cfg[key]
+    check(isinstance(v, list) and len(v) == n, f"{key}: expected {n} values")
+    check(all(finite(x) for x in v), f"{key}: non-finite or non-numeric value")
     return v
 
 
+def flat(cfg, key):
+    m = cfg[key]
+    check(isinstance(m, list) and len(m) == 6, f"{key}: expected 6 rows")
+    return [x for i in range(6) for x in vec({key: m[i]}, key)]
+
+
 def build_blob(cfg):
-    signs = vec(cfg["sign_axis"])
-    assert all(s in (1, -1) for s in signs), "sign_axis entries must be +/-1"
-    dead = vec(cfg["dead_axis"])
-    assert all(0.0 <= d < AXIS_LIMIT for d in dead), "dead zone out of range"
-    expo = vec(cfg["curve_expo"])
-    assert all(0.5 <= e <= 5.0 for e in expo), "curve expo out of range"
+    keys = {k for k in cfg if not k.startswith("_")}
+    check(keys == set(FIELDS),
+          f"keys: missing {sorted(set(FIELDS) - keys)}, "
+          f"unknown {sorted(keys - set(FIELDS))}")
+    signs = vec(cfg, "sign_axis")
+    check(all(s in (1, -1) for s in signs), "sign_axis entries must be +/-1")
+    dead = vec(cfg, "dead_axis")
+    check(all(0.0 <= d < AXIS_LIMIT for d in dead), "dead zone out of range")
+    expo = vec(cfg, "curve_expo")
+    check(all(0.5 <= e <= 5.0 for e in expo), "curve expo out of range")
     for key in ("trim_pos", "trim_neg"):
-        assert all(0.0 < t < 10.0 for t in vec(cfg[key])), f"{key} out of range"
-    assert 0.0 <= cfg["smooth_tau_s"] <= 1.0, "smooth_tau_s out of range"
+        check(all(0.0 < t < 10.0 for t in vec(cfg, key)), f"{key} out of range")
+    tau = cfg["smooth_tau_s"]
+    check(finite(tau) and 0.0 <= tau <= 1.0, "smooth_tau_s out of range")
     led = cfg["led_default_color_index"]
-    assert 0 <= led < 16, "led index implausible"
+    check(isinstance(led, int) and not isinstance(led, bool)
+          and 0 <= led < LED_PALETTE_COUNT,
+          f"led_default_color_index must be 0..{LED_PALETTE_COUNT - 1}")
 
     body = struct.pack(
         "<IHH6b2x36f6f6f6f6f36f36ffB3x",
@@ -54,19 +90,19 @@ def build_blob(cfg):
         TUNING_VERSION,
         0,
         *signs,
-        *flat(cfg["decouple"]),
-        *vec(cfg["trim_pos"]),
-        *vec(cfg["trim_neg"]),
+        *flat(cfg, "decouple"),
+        *vec(cfg, "trim_pos"),
+        *vec(cfg, "trim_neg"),
         *dead,
         *expo,
-        *flat(cfg["cross_pos"]),
-        *flat(cfg["cross_neg"]),
-        cfg["smooth_tau_s"],
+        *flat(cfg, "cross_pos"),
+        *flat(cfg, "cross_neg"),
+        tau,
         led,
     )
     crc = zlib.crc32(body) & 0xFFFFFFFF
     blob = body + struct.pack("<I", crc)
-    assert len(blob) == 556, f"blob is {len(blob)} bytes, expected 556"
+    check(len(blob) == 556, f"blob is {len(blob)} bytes, expected 556")
     return blob
 
 
@@ -94,8 +130,12 @@ def main():
     if len(sys.argv) != 3:
         print(f"Usage: python3 {sys.argv[0]} <config.json> <out.uf2>")
         sys.exit(1)
-    cfg = json.load(open(sys.argv[1]))
-    blob = build_blob(cfg)
+    with open(sys.argv[1]) as f:
+        cfg = json.load(f)
+    try:
+        blob = build_blob(cfg)
+    except (ConfigError, KeyError) as e:
+        sys.exit(f"{sys.argv[1]}: invalid config: {e}")
     uf2 = to_uf2(blob, TUNING_FLASH_ADDR)
     with open(sys.argv[2], "wb") as f:
         f.write(uf2)

@@ -1,5 +1,6 @@
 #include "TuningConfig.h"
 
+#include <math.h>
 #include <string.h>
 
 #include "Config.h"
@@ -40,6 +41,12 @@ void loadDefaults(TuningConfig& c) {
 
 bool valuesSane(const TuningConfig& c) {
   for (int i = 0; i < 6; i++) {
+    for (int j = 0; j < 6; j++) {
+      if (!isfinite(c.decouple[i][j]) || !isfinite(c.cross_pos[i][j]) ||
+          !isfinite(c.cross_neg[i][j])) {
+        return false;
+      }
+    }
     if (c.sign_axis[i] != 1 && c.sign_axis[i] != -1) return false;
     if (!(c.dead_axis[i] >= 0.0f && c.dead_axis[i] < Config::AXIS_LIMIT)) return false;
     if (!(c.curve_expo[i] >= 0.5f && c.curve_expo[i] <= 5.0f)) return false;

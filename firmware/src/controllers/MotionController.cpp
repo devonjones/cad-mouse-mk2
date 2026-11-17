@@ -31,28 +31,30 @@ enum AxisIndex {
 // Sign fixes, fitted decoupling matrix (gain + cross-axis cancellation),
 // then per-direction trims for the asymmetric magnet/sensor response.
 void decouple(const float sensed[6], float y[6]) {
+  const TuningConfig& t = tuning();
   float v[6];
   for (int i = 0; i < 6; i++) {
-    v[i] = tuning().sign_axis[i] * sensed[i];
+    v[i] = t.sign_axis[i] * sensed[i];
   }
   for (int i = 0; i < 6; i++) {
     float acc = 0.0f;
     for (int j = 0; j < 6; j++) {
-      acc += tuning().decouple[i][j] * v[j];
+      acc += t.decouple[i][j] * v[j];
     }
-    y[i] = acc * (acc >= 0.0f ? tuning().trim_pos[i] : tuning().trim_neg[i]);
+    y[i] = acc * (acc >= 0.0f ? t.trim_pos[i] : t.trim_neg[i]);
   }
 }
 
 // Second-stage correction for the direction-dependent coupling the
 // linear matrix leaves behind (e.g. roll dragging pan along).
 void applyCrossFix(const float y[6], float yc[6]) {
+  const TuningConfig& t = tuning();
   for (int i = 0; i < 6; i++) {
     float acc = y[i];
     for (int j = 0; j < 6; j++) {
       if (j == i) continue;
-      const float c = (y[j] >= 0.0f) ? tuning().cross_pos[j][i]
-                                     : tuning().cross_neg[j][i];
+      const float c = (y[j] >= 0.0f) ? t.cross_pos[j][i]
+                                     : t.cross_neg[j][i];
       acc -= c * y[j];
     }
     yc[i] = acc;
@@ -154,11 +156,12 @@ void MotionController::compute(const float raw[9], const float* baseline, float 
   // shaped value ramps smoothly from zero at the dead-zone edge, so a
   // light touch produces small-but-present motion instead of nothing.
   motionActive_ = false;
+  const TuningConfig& t = tuning();
   for (int i = 0; i < 6; i++) {
     const float shaped =
-        shapeAxis(yc[i], axisBaseDead(i), tuning().curve_expo[i]);
+        shapeAxis(yc[i], axisBaseDead(i), t.curve_expo[i]);
 
-    filt_[i] = lowpass(filt_[i], shaped, dt, tuning().smooth_tau_s);
+    filt_[i] = lowpass(filt_[i], shaped, dt, t.smooth_tau_s);
 
     const float limited =
         clampf(filt_[i], -Config::AXIS_LIMIT, Config::AXIS_LIMIT);

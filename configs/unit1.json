@@ -1,6 +1,12 @@
 {
   "_unit": "unit1 — purple case",
   "_provenance": "Fitted 2026-07-09 from guided captures (tools/calibration/), then feel-tuned on hardware: RX trims ~0.85x (pitch oversensitive), RY- trim 1.5x (roll right slow) with compensated cross row, RX->TY cross kept below fitted strength (forward pushes carry incidental pitch), curves rebalanced translation-flat/rotation-steep for coordinated orbiting.",
+  "_notes": [
+    "Trims were hand-adjusted after fitting: RX (pitch) ~0.85x, RY- (roll right) 1.5x. When a source axis's trim changes after fitting, its CROSS rows must be rescaled by old_trim/new_trim so the correction stays constant in absolute terms.",
+    "RX source rows rescaled for the RX trim change (0.870->0.740 pos, 1.121->0.950 neg), EXCEPT RX->TY, which deliberately keeps the pre-rescale values: forward pushes carry incidental pitch and the full-strength correction ate enough forward pan to feel slow.",
+    "cross_neg RY row scaled 1/1.5 to offset the RY- trim boost.",
+    "Only rotation->translation and translation->TZ cross terms above 0.15 are corrected. TZ drifts most, hence the widest dead zone. Translation curves flatter than rotation so coordinated orbit (strafe while rotating) stays balanced."
+  ],
   "sign_axis": [1, -1, 1, -1, -1, -1],
   "decouple": [
     [116.6878, -19.5656, 6.0574, -2.0605, -31.5003, -8.7592],

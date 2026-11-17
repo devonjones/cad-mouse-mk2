@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <stddef.h>
 
 // Per-unit tuning data, deployed as a UF2 block written to TUNING_FLASH_ADDR
 // (see tools/config/README.md) so one compiled binary serves every unit.
@@ -11,7 +12,10 @@
 // TUNING_VERSION whenever it changes. All multi-byte fields little-endian;
 // axis order TX, TY, TZ, RX, RY, RZ; output units AXIS_LIMIT (350) = full
 // deflection.
-struct __attribute__((packed)) TuningConfig {
+// aligned(4): every float sits at a 4-byte offset, so with a word-aligned
+// base the compiler can use word loads — packed alone forces byte-wise
+// access on the Cortex-M0+ (no unaligned loads) in the per-sample loops.
+struct __attribute__((packed, aligned(4))) TuningConfig {
   uint32_t magic;        // 'CADM' = 0x4D444143
   uint16_t version;      // TUNING_VERSION
   uint16_t reserved;
@@ -30,10 +34,15 @@ struct __attribute__((packed)) TuningConfig {
   uint32_t crc32;  // over all preceding bytes
 };
 static_assert(sizeof(TuningConfig) == 556, "layout is shared with tooling");
+static_assert(offsetof(TuningConfig, decouple) == 16, "layout is shared with tooling");
+static_assert(offsetof(TuningConfig, smooth_tau_s) == 544, "layout is shared with tooling");
+static_assert(offsetof(TuningConfig, crc32) == 552, "layout is shared with tooling");
 
 const uint32_t TUNING_MAGIC = 0x4D444143;  // 'CADM'
 const uint16_t TUNING_VERSION = 1;
-// Second-to-last 4KB flash sector (the last one is EEPROM emulation).
+// Second-to-last 4KB flash sector (the last one, 0x101FF000, is arduino-pico
+// EEPROM emulation). The linker's FLASH region still covers this sector, so
+// the firmware image must stay below it (currently ~115KB of 2MB).
 const uint32_t TUNING_FLASH_ADDR = 0x101FE000;
 
 class TuningStore {
