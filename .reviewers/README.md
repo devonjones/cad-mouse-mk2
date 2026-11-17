@@ -12,10 +12,10 @@ The repo has no CI. Before posting a round's fixes, the orchestrator runs `~/.lo
 | sensor-i2c-reviewer | TLx493D bring-up and addressing, I2C cost, read failures |
 | tuning-layout-reviewer | `TuningConfig` flash block: layout, version, CRC, UF2, packer parity |
 | calibration-config-reviewer | `configs/*.json` provenance and invariants, capture/fit tooling |
-| realtime-loop-reviewer | blocking, flash writes, timing arithmetic, state machine |
+| realtime-loop-reviewer | blocking, flash writes, per-iteration cost, timing arithmetic, state machine |
 | memory-and-types-reviewer | heap, `double` creep, narrowing, alignment, bounds, size |
 | complexity-reviewer | firmware function size and responsibilities |
-| clarity-reviewer | Markdown docs only |
+| clarity-reviewer | Markdown docs, including when code they cite changes |
 | code-reviewer | broad bugs plus the house rules it carries (there is no CLAUDE.md) |
 | pr-test-analyzer | mutation-proven coverage gaps in `tools/config` and the host-compiled firmware |
 | silent-failure-hunter | swallowed errors and fallbacks |

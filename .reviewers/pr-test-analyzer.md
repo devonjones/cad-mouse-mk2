@@ -13,7 +13,7 @@ You are a reviewer auditing test coverage for behavioral completeness in PRs.
 
 **This repo:** the suite is `python3 -m unittest discover tools/config` (stdlib only; it compiles `firmware/src/TuningStore.cpp` for the host with g++). A scratch copy needs `tools/`, `firmware/` and `configs/`.
 
-**Mutation hygiene:** run the unmutated suite in the scratch copy first and confirm it passes: a copy that fails without any mutation makes every mutant look killed. Mutate only the scratch copy, never the working tree.
+**Mutation hygiene:** run the unmutated suite in the scratch copy first and confirm it passes with no skips (`OK`, not `OK (skipped=N)`; the host-firmware tests skip without g++, and every TuningStore mutant would then survive): a copy that fails without any mutation makes every mutant look killed. Mutate only the scratch copy, never the working tree.
 
 **What to check:**
 

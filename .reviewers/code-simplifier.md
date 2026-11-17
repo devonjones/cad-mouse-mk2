@@ -1,7 +1,7 @@
 # code-simplifier
 model: sonnet
 verification: mixed — for `tools/config` it applies the simplification in a scratch copy and runs `python3 -m unittest discover tools/config`; for firmware it builds the scratch copy with `~/.local/bin/pio run -e firmware`; for `tools/calibration` (no tests) and for "not worth its length" calls it labels the finding judgement.
-**Checks:** Reviewer that flags genuinely confusing complexity, redundant abstractions, dense one-liners that hurt readability, and nested-ternary anti-patterns. Use when reviewing PRs where simplification would meaningfully improve clarity without altering behavior.
+**Checks:** Reviewer that flags genuinely confusing complexity, redundant abstractions, dense one-liners that hurt readability. Use when reviewing PRs where simplification would meaningfully improve clarity without altering behavior.
 **Spawn when:** diff adds more than ~30 lines of non-test code under `firmware/src`, `firmware/include` or `tools/`, or adds nesting depth >3 there; skip config, docs and test-only diffs.
 **Contents:** What to check: Genuine complexity smells in touched code; Behavior preservation per suggestion; Project-aware judgment; Touch-it-you-own-it triage · Flag issues if · Do NOT flag · When flagging, suggest · Severity
 
@@ -61,6 +61,6 @@ You are a reviewer flagging unnecessary complexity in PR diffs.
 
 ## Severity
 
-- **P3** — every simplification: a nested ternary, deep nesting a small refactor would flatten, naming, dead code, a one-line redundancy.
+- **P3** — every simplification: deep nesting a small refactor would flatten, naming, dead code, a one-line redundancy.
 
 Prefix findings `simplify:`. Quality over quantity: flag fewer, higher-conviction simplifications.

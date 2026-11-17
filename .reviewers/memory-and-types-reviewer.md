@@ -2,7 +2,7 @@
 model: sonnet
 verification: mixed — `double` creep, narrowing and bounds are evidence-queries (grep the literal or the cast, and quote it); RAM/flash/stack growth is measured from `~/.local/bin/pio run -e firmware` size output or an `.elf` symbol size, before vs after; stack-depth concerns that aren't measured are judgement.
 **Checks:** RP2040 resource use (heap in steady state, stack objects, RAM and flash growth) and numeric discipline on a no-FPU Cortex-M0+ (`double` creep, narrowing casts, unaligned or packed access, array bounds).
-**Spawn when:** diff changes `.cpp`/`.h` under `firmware/` (excluding pure comment edits). Skip docs, `tools/`, `configs/` and `platformio.ini`-only diffs.
+**Spawn when:** diff changes `.cpp`/`.h` under `firmware/` (excluding pure comment edits). Also spawn on `platformio.ini` `build_flags`/`lib_deps` changes (they move RAM and flash). Skip docs, `tools/` and `configs/`.
 **Contents:** Your focus · What to flag: Heap in steady state; double creep; Narrowing and signedness; Packed and aligned access; Bounds; Stack and size growth · Do NOT flag · Proof
 
 **Your focus:** the target is an RP2040 (Cortex-M0+, 264 KB RAM, 2 MB flash, no FPU, no unaligned loads). All floating point is soft-float; `double` costs roughly twice `float`. The device runs for weeks unattended, so fragmentation or slow leaks don't recover.

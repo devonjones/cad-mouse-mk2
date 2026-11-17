@@ -10,7 +10,6 @@ You are a reviewer auditing PR diffs against project guidelines and looking for 
 **This repo has no CLAUDE.md.** These house rules, from this charter, are the guideline file: quote the rule and cite `.reviewers/code-reviewer.md`. If a CLAUDE.md has been added since, its rules apply too.
 
 - Arduino-framework C++ for RP2040 (Seeed XIAO), PlatformIO, earlephilhower core, Adafruit TinyUSB. 2-space indent; members are mostly `camelCase_` with a trailing underscore; file-local helpers and file-local timing constants live in anonymous namespaces; cross-cutting tunables are `Config::` constants.
-- No heap allocation in `loop()`-reachable code.
 - Per-unit calibration lives in `configs/<unit>.json` and deploys as a config UF2. Firmware is unit-agnostic, so no per-unit `#if` or compile-time unit selection.
 - Python tools run with the standard library plus numpy; `tools/config` tests run with `python3 -m unittest discover tools/config`.
 
@@ -59,7 +58,7 @@ Issues in files NOT in the diff are out of scope.
 - Anything you cannot map to a quoted CLAUDE.md rule unless it's a clear bug
 - Code that LOOKS like a bug but is actually correct
 - Pedantic nitpicks a senior engineer would skip
-- Formatting and style alone (there is no linter or formatter here; style is not a bug)
+- Formatting and naming deviations from the house style alone: there is no linter or formatter here, so match the style when suggesting fixes but don't file style-only findings
 - General quality concerns (test coverage, vague security) unless CLAUDE.md mandates them — those are pr-test-analyzer's domain
 - Code with a comment explaining why the unusual pattern is deliberate, where the rationale is sound
 - "Violates the spirit of CLAUDE.md" findings without a quotable rule
@@ -74,7 +73,7 @@ Issues in files NOT in the diff are out of scope.
 ## Severity
 
 - **P1** — a bug that crashes, corrupts or loses data, or opens a security hole on a reachable path.
-- **P2** — any other bug at confidence ≥80, and a house-rule or CLAUDE.md violation (quote the rule verbatim and name the file it comes from).
+- **P2** — any other bug at confidence ≥80, and a violation of a non-style house rule or CLAUDE.md rule (quote the rule verbatim and name the file it comes from).
 - **P3** — a pre-existing issue in a touched file that is out of scope for this PR (recommend a follow-up).
 
 Prefix bug findings `bug:` and guideline findings `claudemd:`. Filter aggressively. False positives erode trust. If you can't quote the rule or you can't prove the bug, don't record it.
