@@ -22,8 +22,8 @@ void TelemetryController::publish(const float motion[6], int buttonBits,
     return;
   }
 
-  // Repeated in each telemetry frame: TinyUSB CDC drops output sent before the host
-  // opens the port, so a one-time boot print is never seen.
+  // Repeated in each telemetry frame: TinyUSB CDC drops output sent
+  // before the host opens the port, so a one-time boot print is never seen.
   Serial.print(">tuning_status:");
   Serial.println(static_cast<int>(tuningStatus()));
   Serial.print(">X:");
