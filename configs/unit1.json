@@ -8,7 +8,8 @@
     "Only rotation->translation and translation->TZ cross terms above 0.15 are corrected. TZ drifts most, hence the widest dead zone. Translation curves flatter than rotation so coordinated orbit (strafe while rotating) stays balanced.",
     "2026-11-17 translation gain: raw-HID captures (2 runs each) vs a real SpaceNavigator showed firm pushes peaking at 78-217 (X), 84-139 (Y), 93 pull-up / 278-333 push-down, where the SpaceNavigator saturates at 350 on every axis. Translation trims raised so a firm push reaches ~1.15x full scale before the curve (TX +1.56/-2.37x, TY +2.52/-2.05x, TZ +1.18/-2.10x); TX/TY cross source rows rescaled by old/new trim; X/Y dead zones raised to 65/85 to stay 1.25x above the boosted rest noise (measured from debug telemetry). Rotation and the twist->roll bleed are unchanged (needs recalibration).",
     "2026-11-17 curves flattened (translation 1.35/1.5 -> 1.2/1.35, rotation 2.0-2.1 -> 1.5-1.6): gentle-rotation captures on the real SpaceNavigator hold 65-300 with a near-linear low end, where the steeper curves gave a few percent; Devon found fine changes, rotation most, sluggish. Rotation stays a little steeper than translation for orbit balance.",
-    "2026-11-17 rotation down ~10%: with translation matched to the SpaceNavigator, Devon found rotation/tilt running ahead of pan. Rotation trims x0.935 (about -10% output through the 1.5-1.6 curves); rotation cross source rows rescaled by old/new trim so corrections stay constant in absolute terms."
+    "2026-11-17 rotation down ~10%: with translation matched to the SpaceNavigator, Devon found rotation/tilt running ahead of pan. Rotation trims x0.935 (about -10% output through the 1.5-1.6 curves); rotation cross source rows rescaled by old/new trim so corrections stay constant in absolute terms.",
+    "2026-11-17 cross target rescale: corrections subtract c*y_source from a post-trim target, so a coefficient must scale by target_new/target_old as well as source_old/source_new. The translation retune raised the TX/TY/TZ target trims 1.2-2.5x, so each entry was also scaled by (shipped target trim for its bleed direction)/(the 2026-07-09 trim it was fitted against)."
   ],
   "sign_axis": [1, -1, 1, -1, -1, -1],
   "decouple": [
@@ -24,19 +25,19 @@
   "dead_axis": [65.0, 85.0, 80.0, 11.0, 14.0, 12.0],
   "curve_expo": [1.2, 1.2, 1.35, 1.6, 1.5, 1.5],
   "cross_pos": [
-    [0.0, 0.0, 0.3322, 0.0, 0.0, 0.0],
-    [0.0, 0.0, 0.2376, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.3920, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.2803, 0.0, 0.0, 0.0],
     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    [-0.6109, -0.3039, 0.5205, 0.0, 0.0, 0.0],
-    [0.1859, -0.3918, 0.0, 0.0, 0.0, 0.0],
-    [0.0, 0.0, 0.2939, 0.0, 0.0, 0.0]
+    [-1.4484, -0.6227, 0.6141, 0.0, 0.0, 0.0],
+    [0.2906, -0.8029, 0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.3468, 0.0, 0.0, 0.0]
   ],
   "cross_neg": [
     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    [0.0, 0.0, -0.1017, 0.0, 0.0, 0.0],
+    [0.0, 0.0, -0.1200, 0.0, 0.0, 0.0],
     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    [0.0, -0.1894, -0.3284, 0.0, 0.0, 0.0],
-    [0.2996, 0.5440, 0.0, 0.0, 0.0, 0.0],
+    [0.0, -0.4769, -0.3875, 0.0, 0.0, 0.0],
+    [0.7103, 1.1147, 0.0, 0.0, 0.0, 0.0],
     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
   ],
   "smooth_tau_s": 0.09,
