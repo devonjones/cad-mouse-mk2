@@ -27,7 +27,7 @@ The repo has no CI. Before posting a round's fixes, the orchestrator runs `~/.lo
 # Guidelines
 
 - **Domain ownership.** Comment findings belong to comment-analyzer and doc findings to clarity-reviewer. TuningConfig layout belongs to tuning-layout-reviewer and calibration values to calibration-config-reviewer. Other reviewers don't file in those lanes unless the finding is a symptom of their own.
-- **Hardware isn't available to reviewers.** Findings about on-device behaviour (driver binding, sensor electrical faults, feel) are judgement unless shown in a host test or from the code path. When a change can only be verified on hardware, the orchestrator asks Devon to flash it and prints the full step list (unplug → hold both buttons 10 s → copy the UF2 to `RPI-RP2` → capture with `tools/calibration/capture-serial.ps1` on Windows COM3).
+- **Hardware isn't available to reviewers.** Findings about on-device behaviour (driver binding, sensor electrical faults, feel) are judgement unless shown in a host test or from the code path. When a change can only be verified on hardware, the orchestrator asks Devon to flash it and prints the full step list (unplug → hold both buttons 10 s → copy the UF2 to `RPI-RP2` → capture with `tools/calibration/capture-serial.ps1` on the device's Windows COM port, COM3 on artemis).
 - **Settled decisions (don't re-litigate):**
   - Falling back to the compiled defaults on an invalid config block is the design, and a release-build LED signal for it is a tracked follow-up.
   - `curve_expo` 0.5–5 and `TUNING_MAX_COEFF` are sanity bounds, not tuning conventions.

@@ -1,8 +1,8 @@
 # code-simplifier
 model: sonnet
-verification: mixed — builds the simplification it proposes and runs the existing checks against it; labels "this is not worth its length" as judgement.
+verification: mixed — for `tools/config` it applies the simplification in a scratch copy and runs `python3 -m unittest discover tools/config`; for firmware it builds the scratch copy with `~/.local/bin/pio run -e firmware`; for `tools/calibration` (no tests) and for "not worth its length" calls it labels the finding judgement.
 **Checks:** Reviewer that flags genuinely confusing complexity, redundant abstractions, dense one-liners that hurt readability, and nested-ternary anti-patterns. Use when reviewing PRs where simplification would meaningfully improve clarity without altering behavior.
-**Spawn when:** diff adds more than ~30 lines of non-test source code, or touches a function with new nesting depth >3 or a nested ternary; skip for config, docs and test-only diffs.
+**Spawn when:** diff adds more than ~30 lines of non-test code under `firmware/src`, `firmware/include` or `tools/`, or adds nesting depth >3 there; skip config, docs and test-only diffs.
 **Contents:** What to check: Genuine complexity smells in touched code; Behavior preservation per suggestion; Project-aware judgment; Touch-it-you-own-it triage · Flag issues if · Do NOT flag · When flagging, suggest · Severity
 
 You are a reviewer flagging unnecessary complexity in PR diffs.
@@ -18,12 +18,11 @@ You are a reviewer flagging unnecessary complexity in PR diffs.
 1. **Genuine complexity smells in touched code:**
    - Deep nesting (more than 3-4 levels) that could flatten via early return or extracted helper
    - Dense one-liner expressions that fit on a screen but require careful reading
-   - Nested ternary operators (explicit anti-pattern; prefer switch / if-else chains)
    - Redundant abstractions that wrap a single call without adding meaning
    - Dead code (unreachable branches, unused vars, commented-out blocks)
    - Variables / functions named so generically the call site requires looking up the body to understand
 2. **Behavior preservation per suggestion:**
-   - Walk through edge cases: empty inputs, null, exceptions, async ordering
+   - Walk through edge cases: empty or short inputs, NaN and boundary floats, `ConfigError`/`KeyError`/`ValueError` paths in the Python tools, and call order in the firmware loop
    - If any edge case changes — DO NOT flag the simplification
 3. **Project-aware judgment:**
    - If the codebase has consistent conventions (e.g., anonymous-namespace helpers in firmware, stdlib-only Python in `tools/config`), respect them
@@ -36,7 +35,6 @@ You are a reviewer flagging unnecessary complexity in PR diffs.
 
 **Flag issues if:**
 
-- Nested ternary that would clearly read better as a switch / if-else
 - Deep nesting (>3 levels) where an early-return refactor is small and obviously preserves behavior
 - A redundant single-call wrapper or one-line helper that adds no abstraction
 - Dead code visible in the diff (unreachable branches, unused vars introduced by this PR, commented-out code)
@@ -50,15 +48,15 @@ You are a reviewer flagging unnecessary complexity in PR diffs.
 - "Simpler" alternatives that change behavior in edge cases — those aren't simplifications
 - Verbose code that's verbose-on-purpose for readability (explicit > clever)
 - Helpful abstractions that look redundant in isolation but serve a structural purpose (extension points, naming for intent)
-- Issues a linter / formatter would catch deterministically
+- Formatting alone (there is no linter or formatter here)
 - Pre-existing complexity in untouched code regions of a modified file
 - Firmware patterns that exist for the hardware: one `sendReport` per call with a rotating slot, the per-sensor power-on/readdress sequence, anonymous-namespace helpers, and the `Config::` constants used for every tunable.
 - `diag_main.cpp`, which is deliberately flat and verbose.
 
 **When flagging, suggest:**
 
-- The minimal rewrite with a code snippet (≤6 lines after change)
-- For larger simplifications (>5 lines or spanning multiple locations): describe the direction and recommend a follow-up — do NOT include a committable suggestion block (per the "only suggest if commit fully fixes" rule)
+- The minimal rewrite with a code snippet when it is 6 lines or fewer after the change
+- For anything larger or spanning multiple locations: describe the direction and recommend a follow-up, with no snippet
 - For pre-existing larger complexity in touched files: out-of-scope, follow-up
 
 ## Severity

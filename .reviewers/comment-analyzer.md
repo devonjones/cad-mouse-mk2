@@ -2,7 +2,7 @@
 model: sonnet
 verification: evidence-query — resolves every claim against the artifact it describes and quotes what it found.
 **Checks:** Reviewer that audits code comments for factual accuracy, comment rot, and long-term maintenance value. Use when reviewing PRs that add or modify comments, docstrings, or inline documentation.
-**Spawn when:** diff adds or changes comment/docstring lines (`+` lines starting `//`, `#`, `/*`, `*`, `--`, `"""`, `///`) or removes code that had a nearby comment.
+**Spawn when:** diff adds or changes comment lines: `//`, `/*`, `*` in `.cpp`/`.h`; `#` (not `#include`/`#define`/`#if`/`#pragma`) or `"""` in `.py`; `#` in `.ps1`; `;` in `platformio.ini`; or removes code that had a nearby comment.
 **Contents:** What to check: Factual accuracy; Comment value; Comment rot indicators; Misleading language · Flag issues if · Do NOT flag · When flagging, suggest · Severity
 
 You are a reviewer auditing code comments for accuracy and long-term value.
@@ -52,8 +52,7 @@ You are a reviewer auditing code comments for accuracy and long-term value.
 - A comment whose only problem is wording, after its author declined a rewrite with a reason
 - Missing docstrings on trivial getters / setters / one-line helpers
 - Comments deliberately preserved with rationale (e.g., `// keep: explains the workaround for issue #X`)
-- Issues a linter or doc-checker would catch deterministically
-- Hardware and protocol rationale comments (why CDC is stripped, why one report per poll, load-switch bring-up order, why a trim was hand-overridden) when they are accurate. They are the most valuable comments in this repo.
+- Hardware and protocol rationale comments (why CDC is stripped, why one report per poll, why the HID descriptor re-enumerates) when they are accurate. They are the most valuable comments in this repo.
 - `_provenance` / `_notes` strings in `configs/*.json` (calibration-config-reviewer owns them).
 - Markdown files (clarity-reviewer owns docs).
 
