@@ -1,0 +1,36 @@
+{
+  "bots": {
+    "gemini": false,
+    "cursor": false
+  },
+  "overlap_acknowledged": {
+    "complexity-reviewer": {
+      "overlaps_with": "code-simplifier",
+      "reason": "complexity-reviewer measures firmware function size, responsibilities and nesting against the pipeline-stage idiom; code-simplifier looks for redundant abstractions and simpler equivalent code across firmware and Python tools. Different lenses on overlapping code."
+    },
+    "clarity-reviewer": {
+      "overlaps_with": "comment-analyzer",
+      "reason": "Split by artifact: clarity-reviewer owns Markdown docs (staleness, duplication, wordiness); comment-analyzer owns code comments and docstrings. comment-analyzer's do-not-flag list excludes Markdown, and clarity-reviewer's excludes code comments."
+    },
+    "tuning-layout-reviewer": {
+      "overlaps_with": "calibration-config-reviewer",
+      "reason": "Split by layer: tuning-layout-reviewer owns the flash block contract (struct, version, CRC, UF2, packer/firmware parity); calibration-config-reviewer owns the per-unit values, their provenance and the capture/fit tooling."
+    },
+    "hid-protocol-reviewer": {
+      "overlaps_with": "realtime-loop-reviewer",
+      "reason": "Both look at the main loop: hid-protocol-reviewer checks the TinyUSB contract (task() every iteration, one report per poll, pure-HID Serial fencing); realtime-loop-reviewer checks blocking and per-iteration cost. A stalled loop can be a finding for each, from a different cause."
+    },
+    "sensor-i2c-reviewer": {
+      "overlaps_with": "realtime-loop-reviewer",
+      "reason": "sensor-i2c-reviewer counts I2C transactions and vendor retries; realtime-loop-reviewer judges their effect on loop latency. Each charter names the hand-off."
+    },
+    "calibration-config-reviewer": {
+      "overlaps_with": "clarity-reviewer",
+      "reason": "Both read tools/calibration/README.md and tools/config/README.md: calibration-config-reviewer checks the workflow still works end to end with the tools; clarity-reviewer checks staleness and wording."
+    },
+    "memory-and-types-reviewer": {
+      "overlaps_with": "tuning-layout-reviewer",
+      "reason": "memory-and-types-reviewer covers alignment and size for all firmware; TuningConfig's own alignment and the image-below-0x101FE000 constraint belong to tuning-layout-reviewer, as memory-and-types-reviewer's charter says."
+    }
+  }
+}
