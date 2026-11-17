@@ -21,6 +21,11 @@ Enter the bootloader (hold both buttons 10s → `RPI-RP2` drive) and copy
 change) can copy just `<unit>-config.uf2`; the firmware and config occupy
 separate flash regions, so either can be reflashed alone.
 
+`merge_uf2.py` pads each 4 KB sector to 16 UF2 blocks. The RP2040 bootrom
+decides which sector to erase from a block's sequence number, not its
+address, so a plain concatenation leaves the config sector unerased and the
+new block is ANDed onto the old one (`>tuning_status:3`, bad CRC).
+
 ## Notes
 
 - The JSON keys map 1:1 to the `TuningConfig` fields; keys starting with

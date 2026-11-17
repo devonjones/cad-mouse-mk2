@@ -297,6 +297,26 @@ class FirmwareValidation(unittest.TestCase):
                                  self.LOADED)
 
 
+def bootrom_flash(uf2, start=0x00):
+    """Program a UF2 the way the RP2040 bootrom does, onto flash pre-filled
+    with `start` (0x00 = worst case: anything not erased reads back wrong).
+    Erase flags are keyed on block_no // 16; the sector erased is that of the
+    first block of the group to arrive (blocks arrive in file order)."""
+    flash, cleared = {}, set()
+    for i in range(0, len(uf2), 512):
+        b = uf2[i:i + 512]
+        addr, size, block_no = struct.unpack_from("<III", b, 12)
+        group = block_no * 256 // 4096
+        if group not in cleared:
+            cleared.add(group)
+            base = addr & ~0xFFF
+            for a in range(base, base + 4096):
+                flash[a] = 0xFF
+        for j in range(size):
+            flash[addr + j] = flash.get(addr + j, start) & b[32 + j]
+    return flash
+
+
 class MergeUf2(unittest.TestCase):
     def run_merge(self, d, *inputs):
         out = pathlib.Path(d, "merged.uf2")
@@ -321,11 +341,32 @@ class MergeUf2(unittest.TestCase):
             self.assertEqual(r.returncode, 0, r.stderr)
             data = out.read_bytes()
             blocks = [data[i:i + 512] for i in range(0, len(data), 512)]
-            self.assertEqual(len(blocks), 6)
+            self.assertEqual(len(blocks), 32)  # two sectors, 16 blocks each
             for i, b in enumerate(blocks):
-                self.assertEqual(struct.unpack_from("<II", b, 20), (i, 6))
-            self.assertEqual(payload(b"".join(blocks[3:])),
+                self.assertEqual(struct.unpack_from("<II", b, 20), (i, 32))
+                addr = struct.unpack_from("<I", b, 12)[0]
+                # every 16-block group targets exactly one 4 KB sector
+                self.assertEqual(addr & ~0xFFF,
+                                 struct.unpack_from("<I", blocks[i - i % 16], 12)[0] & ~0xFFF)
+            for b in blocks[3:16] + blocks[19:]:  # filler pages
+                self.assertEqual(struct.unpack_from("<I", b, 16)[0], 256)
+                self.assertEqual(b[32:32 + 256], b"\xff" * 256)
+            self.assertEqual(payload(b"".join(blocks[16:])),
                              mk.build_blob(load("unit1")))
+
+    def test_merged_config_survives_bootrom_on_dirty_flash(self):
+        blob = mk.build_blob(load("unit1"))
+        with tempfile.TemporaryDirectory() as d:
+            fw = self.write(d, "fw.uf2", mk.to_uf2(bytes(range(256)) * 19,
+                                                   0x10000000))
+            cfg = self.write(d, "cfg.uf2", mk.to_uf2(blob, mk.TUNING_FLASH_ADDR))
+            r, out = self.run_merge(d, fw, cfg)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            flash = bootrom_flash(out.read_bytes(), start=0x00)
+            got = bytes(flash[mk.TUNING_FLASH_ADDR + i] for i in range(len(blob)))
+            self.assertEqual(got, blob)
+            fw_bytes = bytes(flash[0x10000000 + i] for i in range(256 * 19))
+            self.assertEqual(fw_bytes, bytes(range(256)) * 19)
 
     def test_rejects_overlap_and_bad_magic(self):
         with tempfile.TemporaryDirectory() as d:
@@ -341,6 +382,20 @@ class MergeUf2(unittest.TestCase):
             r, _ = self.run_merge(d, c, b)
             self.assertNotEqual(r.returncode, 0)
             self.assertIn("bad UF2 magic", r.stderr)
+
+            half = bytearray(mk.to_uf2(b"\0" * 10, 0x10010000))
+            struct.pack_into("<I", half, 16, 128)  # 128-byte payload
+            h = self.write(d, "h.uf2", bytes(half))
+            r, _ = self.run_merge(d, h, b)
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("128-byte payload", r.stderr)
+
+            odd = bytearray(mk.to_uf2(b"\0" * 10, 0x10010000))
+            struct.pack_into("<I", odd, 12, 0x10010080)  # not page-aligned
+            o = self.write(d, "o.uf2", bytes(odd))
+            r, _ = self.run_merge(d, o, b)
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("page-aligned", r.stderr)
 
             t = self.write(d, "t.uf2", a.read_bytes()[:500])
             r, _ = self.run_merge(d, t, b)
