@@ -30,32 +30,31 @@ void SensorController::begin() {
   powerOff(Config::PIN_MAG3_LS);
   delay(5);
 
+  fastModeSensors_ = 0;
   Wire.begin();
   Wire.setClock(400000);
 
-  // Fast mode converts continuously. In the factory low-power mode, a read
+  // Fast mode converts continuously. In the factory low-power mode a read
   // that lands mid-conversion fails the vendor's hasValidData() check
-  // (PD0/PD3) and is retried, up to 11 times. Measured on unit 1: readRaw()
-  // took 11-16 ms and the loop stalled up to ~165 ms, so motion started with
-  // jumps of 60-110. In fast mode reads take ~2 ms and onsets ramp from 1.
+  // (PD0/PD3) and the library makes up to 11 attempts, stalling the loop.
   powerOn(Config::PIN_MAG1_LS);
   mag1Sensor_.begin(true, false, false, true);
   mag1Sensor_.setIICAddress(TLx493D_IIC_ADDR_A2_e);
   mag1Sensor_.setSensitivity(TLx493D_EXTRA_SHORT_RANGE_e);
-  mag1Sensor_.setPowerMode(TLx493D_FAST_MODE_e);
+  if (mag1Sensor_.setPowerMode(TLx493D_FAST_MODE_e)) fastModeSensors_++;
   delay(10);
 
   powerOn(Config::PIN_MAG2_LS);
   mag2Sensor_.begin(true, false, false, true);
   mag2Sensor_.setIICAddress(TLx493D_IIC_ADDR_A1_e);
   mag2Sensor_.setSensitivity(TLx493D_EXTRA_SHORT_RANGE_e);
-  mag2Sensor_.setPowerMode(TLx493D_FAST_MODE_e);
+  if (mag2Sensor_.setPowerMode(TLx493D_FAST_MODE_e)) fastModeSensors_++;
   delay(10);
 
   powerOn(Config::PIN_MAG3_LS);
   mag3Sensor_.begin(true, false, false, true);
   mag3Sensor_.setSensitivity(TLx493D_EXTRA_SHORT_RANGE_e);
-  mag3Sensor_.setPowerMode(TLx493D_FAST_MODE_e);
+  if (mag3Sensor_.setPowerMode(TLx493D_FAST_MODE_e)) fastModeSensors_++;
   delay(10);
 }
 
