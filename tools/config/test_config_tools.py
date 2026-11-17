@@ -117,6 +117,21 @@ class BuildBlob(unittest.TestCase):
                 with self.assertRaises((mk.ConfigError, KeyError)):
                     mk.build_blob(cfg)
 
+    def test_config_uf2_headers(self):
+        # Literal values from the UF2 spec / RP2040 bootrom, not mk.*
+        # constants, so a wrong constant in the packer fails here.
+        uf2 = mk.to_uf2(mk.build_blob(load("unit1")), 0x101FE000)
+        self.assertEqual(len(uf2), 3 * 512)
+        for i in range(3):
+            b = uf2[i * 512:(i + 1) * 512]
+            self.assertEqual(struct.unpack_from("<8I", b, 0), (
+                0x0A324655, 0x9E5D5157,  # magic start 0/1
+                0x00002000,              # familyID present
+                0x101FE000 + i * 256,    # target address
+                256, i, 3,               # payload size, blockNo, numBlocks
+                0xE48BFF56))             # RP2040 family ID
+            self.assertEqual(struct.unpack_from("<I", b, 508)[0], 0x0AB16F30)
+
     def test_cli_reports_bad_json_without_traceback(self):
         with tempfile.TemporaryDirectory() as d:
             bad = pathlib.Path(d, "bad.json")
