@@ -14,11 +14,19 @@ AX = ["TX", "TY", "TZ", "RX", "RY", "RZ"]
 def load(path, dev):
     state = [0] * 6
     frames = []  # (t, [6])
+    tags, bad = set(), 0
     for line in open(path):
         p = line.split()
-        if len(p) != 6 or p[1] != dev:
+        try:
+            t, rid, v = int(p[0]), int(p[2]), list(map(int, p[3:]))
+            if len(p) != 6:
+                raise ValueError
+        except (ValueError, IndexError):
+            bad += 1
             continue
-        t, rid, v = int(p[0]), int(p[2]), list(map(int, p[3:]))
+        tags.add(p[1])
+        if p[1] != dev:
+            continue
         if rid == 1:
             state[0:3] = v
         elif rid == 2:
@@ -26,6 +34,10 @@ def load(path, dev):
         else:
             continue
         frames.append((t, state[:]))
+    if bad:
+        print(f"warning: skipped {bad} malformed line(s)", file=sys.stderr)
+    if not frames:
+        sys.exit(f"no frames for device '{dev}' (tags in file: {sorted(tags) or 'none'})")
     return frames
 
 
@@ -41,6 +53,9 @@ def segments(frames, gap_ms=300, quiet=8):
             last_active = t
     if cur:
         segs.append(cur)
+    short = sum(1 for s in segs if len(s) <= 10)
+    if short:
+        print(f"note: dropped {short} segment(s) of 10 frames or fewer", file=sys.stderr)
     return [s for s in segs if len(s) > 10]
 
 
@@ -72,8 +87,10 @@ def summarise(seg):
             bleed[AX[i]] = round(sum(r) / len(r), 2)
     worst = max(bleed.items(), key=lambda kv: kv[1]) if bleed else ("-", 0)
     sat = sum(1 for x in vals if x >= 345) / len(vals)
-    dt = [b[0] - a_[0] for a_, b in zip(seg, seg[1:])]
-    rate = 1000 / (sorted(dt)[len(dt) // 2] or 1)
+    # Reports 1 and 2 often share a timestamp; count distinct frame times.
+    ts = sorted({t for t, _ in seg})
+    dt = sorted(b - a_ for a_, b in zip(ts, ts[1:])) or [1]
+    rate = 1000 / dt[len(dt) // 2]
     return {
         "axis": ("+" if sign > 0 else "-") + AX[a], "n": len(seg),
         "dur_ms": seg[-1][0] - t0, "first": first, "peak": peak,
@@ -85,6 +102,7 @@ def summarise(seg):
 
 
 def cadence(path, dev):
+    load(path, dev)  # validates the file and tag
     last, changes = {}, {1: [], 2: []}
     for line in open(path):
         p = line.split()
