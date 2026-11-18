@@ -38,6 +38,23 @@ The fit scripts print JSON fragments to paste into that file.
    landed on translation 1.35/1.35/1.5 vs rotation 2.1/2.0/2.0 — start
    there.
 
+## Raw-HID captures (what the host actually receives)
+
+`hid-capture.ps1` reads input reports straight from Windows' HID stack, in a
+shared read alongside 3DxWare. It works on any firmware, release or debug,
+and on a real 3Dconnexion device for comparison. Each line is
+`t_ms device report_id v0 v1 v2`, where the device tag is `real` for VID
+046D and `diy` otherwise:
+
+    powershell -ExecutionPolicy Bypass -File hid-capture.ps1 -Seconds 40 -OutFile hid.txt
+    python3 analyze_hid.py hid.txt diy             # per-move peak, saturation, bleed, rise shape
+    python3 analyze_hid.py hid.txt diy --cadence   # how often values change while deflected
+
+`-Devices` picks the VID/PIDs. The defaults are the SpaceNavigator for
+Notebooks, 256F:C6F0 and 256F:C635. `reference/` holds two captures of a
+real SpaceNavigator for Notebooks under 3DxWare, the target for unit 1's
+feel match (PR #7).
+
 Flashing without opening the case: hold both buttons 10s to reboot into the
 UF2 bootloader. Hold both 3s to recalibrate the zero pose. Hold only the
 right button 3s (while idle) to cycle the LED ring color.
