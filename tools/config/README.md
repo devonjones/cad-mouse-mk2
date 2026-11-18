@@ -21,6 +21,12 @@ Enter the bootloader (hold both buttons 10s → `RPI-RP2` drive) and copy
 change) can copy just `<unit>-config.uf2`; the firmware and config occupy
 separate flash regions, so either can be reflashed alone.
 
+`firmware` presents USB ID `256F:C6F0`, which 3Dconnexion's Windows driver
+doesn't claim. Under the real Compact ID that driver throttles the reports
+(see `platformio.ini`). `pio run -e firmware-compact` builds the Compact
+identity (`256F:C635`) for 3DxWare's Compact profile or spacenavd. Merge its
+`.pio/build/firmware-compact/firmware.uf2` the same way.
+
 `merge_uf2.py` pads each 4 KB sector to 16 UF2 blocks. The RP2040 bootrom
 decides which sector to erase from a block's sequence number, not its
 address, so a plain concatenation leaves the config sector unerased and the
