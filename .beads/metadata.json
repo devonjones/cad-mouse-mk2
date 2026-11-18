@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "cad_mouse_mk2",
+  "project_id": "b0b0bd7f-becb-410a-889c-14860fcbaf2f"
+}
